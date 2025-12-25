@@ -5,9 +5,9 @@ import type {
 import { createClient } from '@supabase/supabase-js'
 
 if (
-	!process.env.SUPABASE_URL ||
-	!process.env.SUPABASE_SERVICE_ROLE_KEY ||
-	!process.env.STORAGE_BUCKET
+	!Bun.env.SUPABASE_URL ||
+	!Bun.env.SUPABASE_SERVICE_ROLE_KEY ||
+	!Bun.env.STORAGE_BUCKET
 ) {
 	throw new Error('SUPABASE_URL is not set')
 }
@@ -19,9 +19,9 @@ export class SupabaseStorageProvider implements IStorageProvider {
 	readonly providerName = 'supabase'
 
 	constructor() {
-		this.url = process.env.SUPABASE_URL!
-		const key = process.env.SUPABASE_SERVICE_ROLE_KEY!
-		this.bucket = process.env.STORAGE_BUCKET!
+		this.url = Bun.env.SUPABASE_URL!
+		const key = Bun.env.SUPABASE_SERVICE_ROLE_KEY!
+		this.bucket = Bun.env.STORAGE_BUCKET!
 
 		this.client = createClient(this.url, key)
 	}

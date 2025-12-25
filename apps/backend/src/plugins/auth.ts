@@ -2,7 +2,7 @@ import type { JWTPayloadSpec } from '@elysiajs/jwt'
 import { jwt } from '@elysiajs/jwt'
 import { Elysia } from 'elysia'
 
-const jwtSecret = process.env.JWT_SECRET
+const jwtSecret = Bun.env.JWT_SECRET
 
 export interface SessionPayload extends JWTPayloadSpec {
 	sub: string

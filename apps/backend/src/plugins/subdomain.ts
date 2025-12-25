@@ -1,7 +1,7 @@
 // src/plugins/subdomain.ts
 import { Elysia } from 'elysia'
 
-const rootDomain = process.env.ROOT_DOMAIN
+const rootDomain = Bun.env.ROOT_DOMAIN
 
 if (!rootDomain) {
 	throw new Error('ROOT_DOMAIN is not set')

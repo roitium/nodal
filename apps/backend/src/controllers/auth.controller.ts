@@ -10,7 +10,7 @@ export const authController = new Elysia({ prefix: '/auth' })
 	.use(
 		jwt({
 			name: 'jwt',
-			secret: process.env.JWT_SECRET!,
+			secret: Bun.env.JWT_SECRET!,
 		}),
 	)
 
