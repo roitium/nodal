@@ -9,9 +9,8 @@ plugins {
 
 android {
     namespace = "com.roitium.nodal"
-    compileSdk {
-        compileSdk = 35
-    }
+    
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.roitium.nodal"
@@ -35,7 +34,7 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName("release")
-            
+
             isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -43,7 +42,7 @@ android {
             )
         }
     }
-    
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
