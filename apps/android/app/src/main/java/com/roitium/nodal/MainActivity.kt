@@ -24,6 +24,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.roitium.nodal.data.NodalRepository
 import com.roitium.nodal.ui.components.AppDrawerContent
+import com.roitium.nodal.ui.screens.explore.ExploreScreen
 import com.roitium.nodal.ui.screens.login.LoginScreen
 import com.roitium.nodal.ui.screens.publish.PublishScreen
 import com.roitium.nodal.ui.screens.register.RegisterScreen
@@ -47,14 +48,15 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun NodalApp() {
     val navController = rememberNavController()
-    val startDestination = if (NodalRepository.isLoggedIn()) "yourMemos" else "login"
+    val startDestination = if (NodalRepository.isLoggedIn()) Screen.YourMemos.route else Screen.Login.route
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     var showLogoutDialog by remember { mutableStateOf(false) }
     
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
-    val gesturesEnabled = currentRoute == "yourMemos"
+    val gesturesEnabled = currentRoute == Screen.YourMemos.route || currentRoute == Screen.Explore.route
+
 
     if (showLogoutDialog) {
         AlertDialog(
@@ -121,7 +123,7 @@ fun NodalApp() {
                     }
                 )
             }
-            composable("yourMemos") {
+            composable(Screen.YourMemos.route) {
                 YourMemosScreen(
                     onNavigateToPublish = { navController.navigate(Screen.Publish.route) },
                     onOpenDrawer = {
@@ -129,9 +131,17 @@ fun NodalApp() {
                     }
                 )
             }
-            composable("publish") {
+            composable(Screen.Publish.route) {
                 PublishScreen(
                     onNavigateBack = { navController.popBackStack() }
+                )
+            }
+            composable(Screen.Explore.route) {
+                ExploreScreen(
+                    onNavigateToPublish = { navController.navigate(Screen.Publish.route) },
+                    onOpenDrawer = {
+                        scope.launch { drawerState.open() }
+                    }
                 )
             }
         }

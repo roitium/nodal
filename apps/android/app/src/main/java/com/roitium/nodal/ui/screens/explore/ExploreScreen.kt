@@ -1,4 +1,7 @@
-package com.roitium.nodal.ui.screens.yourMemos
+package com.roitium.nodal.ui.screens.explore
+
+import androidx.compose.foundation.lazy.items
+import com.roitium.nodal.ui.screens.yourMemos.YourMemosViewModel
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -18,8 +21,8 @@ import com.roitium.nodal.ui.components.MemoCard
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun YourMemosScreen(
-    viewModel: YourMemosViewModel = viewModel(),
+fun ExploreScreen(
+    viewModel: ExploreViewModel = viewModel(),
     onNavigateToPublish: () -> Unit,
     onOpenDrawer: () -> Unit
 ) {
@@ -46,7 +49,7 @@ fun YourMemosScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Your Memos") },
+                title = { Text("Explore") },
                 navigationIcon = {
                     IconButton(onClick = onOpenDrawer) {
                         Icon(Icons.Default.Menu, contentDescription = "Menu")

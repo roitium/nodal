@@ -20,6 +20,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.mikepenz.markdown.coil2.Coil2ImageTransformerImpl
+import com.mikepenz.markdown.compose.components.markdownComponents
+import com.mikepenz.markdown.compose.elements.highlightedCodeBlock
+import com.mikepenz.markdown.compose.elements.highlightedCodeFence
+import com.mikepenz.markdown.m3.Markdown
 import com.roitium.nodal.data.Memo
 
 @Composable
@@ -54,11 +59,22 @@ fun MemoCard(memo: Memo) {
                 }
             }
             Spacer(modifier = Modifier.height(8.dp))
-            Text(text = memo.content, style = MaterialTheme.typography.bodyLarge)
+            Markdown(
+                memo.content.trimIndent(),
+                imageTransformer = Coil2ImageTransformerImpl,
+                components = markdownComponents(
+                    codeBlock = highlightedCodeBlock,
+                    codeFence = highlightedCodeFence,
+                )
+            )
 
             if (memo.visibility == "private") {
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(text = "Private", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                Text(
+                    text = "Private",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
             }
         }
     }

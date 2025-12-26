@@ -1,6 +1,5 @@
 package com.roitium.nodal.data
 
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -74,4 +73,19 @@ data class TimelineResponse(
 data class Cursor(
     val createdAt: Long,
     val id: String
+)
+
+@Serializable
+data class UploadUrlResponse(
+    val uploadUrl: String,
+    val path: String,
+    val headers: Map<String, String>? = null
+)
+
+@Serializable
+data class RecordUploadRequest(
+    val path: String,
+    val fileType: String,
+    val fileSize: Long,
+    val filename: String
 )

@@ -1,4 +1,4 @@
-package com.roitium.nodal.ui.screens.yourMemos
+package com.roitium.nodal.ui.screens.explore
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -9,9 +9,8 @@ import com.roitium.nodal.data.Cursor
 import com.roitium.nodal.data.Memo
 import com.roitium.nodal.data.NodalRepository
 import kotlinx.coroutines.launch
-import kotlin.collections.emptyList
 
-class YourMemosViewModel : ViewModel() {
+class ExploreViewModel: ViewModel() {
     var memos by mutableStateOf<List<Memo>>(emptyList())
         private set
 
@@ -39,12 +38,9 @@ class YourMemosViewModel : ViewModel() {
                 // 校验逻辑
                 if (!isRefresh && memos.isNotEmpty() && cursorToUse == null) return@launch
 
-                val username = NodalRepository.currentUser?.username
-
                 val response = NodalRepository.getTimeline(
                     cursorCreatedAt = cursorToUse?.createdAt,
-                    cursorId = cursorToUse?.id,
-                    username = username
+                    cursorId = cursorToUse?.id
                 )
 
                 memos = if (isRefresh) response.data else memos + response.data
