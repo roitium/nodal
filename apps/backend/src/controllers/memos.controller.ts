@@ -6,7 +6,7 @@ import { and, desc, eq, inArray, isNull, lt, or } from 'drizzle-orm'
 import { Elysia, t } from 'elysia'
 import { uuidv7 } from 'uuidv7'
 
-export const memosController = new Elysia({ prefix: '/memos' })
+export const memosController = new Elysia({ prefix: '/memos', tags: ['memos'] })
 	.use(authPlugin)
 	.use(subdomainPlugin)
 	.use(dbPlugin)
@@ -86,6 +86,18 @@ export const memosController = new Elysia({ prefix: '/memos' })
 							size: true,
 						},
 					},
+					replies: {
+						with: {
+							author: {
+								columns: {
+									id: true,
+									username: true,
+									displayName: true,
+									avatarUrl: true,
+								},
+							},
+						},
+					},
 				},
 			})
 
@@ -127,6 +139,9 @@ export const memosController = new Elysia({ prefix: '/memos' })
 			let path = `/${newId}/`
 
 			if (body.parentId) {
+				if (body.isPinned) {
+					return status(400, '回复的笔记不能被置顶')
+				}
 				const parent = await db.query.memos.findFirst({
 					where: eq(memos.id, body.parentId),
 					columns: { path: true, visibility: true },
@@ -137,10 +152,8 @@ export const memosController = new Elysia({ prefix: '/memos' })
 				path = `${parent.path}${newId}/`
 			}
 
-			// B. 插入数据
-			const [inserted] = await db
-				.insert(memos)
-				.values({
+			await db.transaction(async (tx) => {
+				await tx.insert(memos).values({
 					id: newId,
 					content: body.content,
 					userId: user.id,
@@ -148,25 +161,25 @@ export const memosController = new Elysia({ prefix: '/memos' })
 					quoteId: body.quoteId,
 					visibility: body.visibility ?? 'public',
 					path: path,
+					isPinned: body.isPinned ?? false,
 				})
-				.returning()
 
-			if (!inserted) {
-				// 这不该发生
-				return status(500, '新建笔记失败')
-			}
+				if (body.resources && body.resources.length > 0) {
+					await tx
+						.update(resources)
+						.set({ memoId: inserted?.id })
+						.where(
+							and(
+								inArray(resources.id, body.resources),
+								eq(resources.userId, user.id),
+							),
+						)
+				}
+			})
 
-			if (body.resources && body.resources.length > 0) {
-				await db
-					.update(resources)
-					.set({ memoId: inserted?.id })
-					.where(
-						and(
-							inArray(resources.id, body.resources),
-							eq(resources.userId, user.id),
-						),
-					)
-			}
+			const inserted = await db.query.memos.findFirst({
+				where: eq(memos.id, newId),
+			})
 
 			return inserted
 		},
@@ -178,7 +191,8 @@ export const memosController = new Elysia({ prefix: '/memos' })
 				),
 				parentId: t.Optional(t.String({ format: 'uuid' })),
 				quoteId: t.Optional(t.String({ format: 'uuid' })),
-				resources: t.Optional(t.Array(t.String())),
+				resources: t.Optional(t.Array(t.String({ format: 'uuid' }))),
+				isPinned: t.Optional(t.Boolean()),
 			}),
 			detail: {
 				description: '发布 / 评论 / 转发',
@@ -232,18 +246,102 @@ export const memosController = new Elysia({ prefix: '/memos' })
 			},
 		},
 	)
-	.delete('/:id', async ({ user, db, status, params: { id } }) => {
-		if (!user) return status(401, '请先登录')
+	.delete(
+		'/:id',
+		async ({ user, db, status, params: { id } }) => {
+			if (!user) return status(401, '请先登录')
 
-		const memo = await db.query.memos.findFirst({
-			where: eq(memos.id, id),
-		})
+			const memo = await db.query.memos.findFirst({
+				where: eq(memos.id, id),
+			})
 
-		if (!memo) return status(404, '该记录不存在')
+			if (!memo) return status(404, '该记录不存在')
 
-		if (memo.userId !== user.id) return status(403, '无权删除')
+			if (memo.userId !== user.id) return status(403, '无权删除')
 
-		await db.delete(memos).where(eq(memos.id, id))
+			await db.transaction(async (tx) => {
+				await tx.delete(memos).where(eq(memos.id, id))
+				await tx.delete(resources).where(eq(resources.memoId, id))
+			})
 
-		return true
-	})
+			return true
+		},
+		{
+			detail: {
+				description: '删除该笔记',
+			},
+		},
+	)
+	.patch(
+		'/:id',
+		async ({ db, user, body, params: { id }, status }) => {
+			if (!user) return status(401, '请先登录')
+
+			const memo = await db.query.memos.findFirst({
+				where: eq(memos.id, id),
+				with: {
+					resources: true,
+				},
+			})
+			if (!memo) return status(404, '该记录不存在')
+
+			if (memo.userId !== user.id) return status(403, '无权操作')
+
+			const {
+				isPinned,
+				visibility,
+				content,
+				resources: resourcesIds,
+				qouteId,
+			} = body
+
+			await db.transaction(async (tx) => {
+				await tx
+					.update(memos)
+					.set({
+						isPinned: isPinned ?? memo.isPinned,
+						visibility: visibility ?? memo.visibility,
+						content: content ?? memo.content,
+						quoteId: qouteId ?? memo.quoteId,
+					})
+					.where(eq(memos.id, id))
+
+				// 用户没修改资源时，直接返回
+				if (resourcesIds === undefined) {
+					return
+				}
+				if (memo.resources) {
+					await tx
+						.update(resources)
+						.set({ memoId: null })
+						.where(
+							and(eq(resources.memoId, memo.id), eq(resources.userId, user.id)),
+						)
+				}
+				if (resourcesIds) {
+					await tx
+						.update(resources)
+						.set({ memoId: id })
+						.where(
+							and(
+								inArray(resources.id, resourcesIds),
+								eq(resources.userId, user.id),
+							),
+						)
+				}
+			})
+
+			return status(200, '操作成功')
+		},
+		{
+			body: t.Object({
+				isPinned: t.Optional(t.Boolean()),
+				visibility: t.Optional(
+					t.Union([t.Literal('public'), t.Literal('private')]),
+				),
+				content: t.Optional(t.String()),
+				resources: t.Optional(t.Array(t.String({ format: 'uuid' }))),
+				qouteId: t.Optional(t.String({ format: 'uuid' })),
+			}),
+		},
+	)

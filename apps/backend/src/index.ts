@@ -5,7 +5,7 @@ import { authController } from './controllers/auth.controller'
 import { memosController } from './controllers/memos.controller'
 import { resourcesController } from './controllers/resources.controller'
 
-export default new Elysia({ prefix: '/api/v1' })
+export const app = new Elysia({ prefix: '/api/v1' })
 	.use(cors())
 	.use(openapi())
 	.use(memosController)

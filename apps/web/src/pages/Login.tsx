@@ -1,11 +1,10 @@
-"use client";
-
 import { useState } from "react";
-import Link from "next/link";
+import { Link } from "react-router-dom";
 import { useAuth } from "@/context/auth-context";
 import { apiFetch } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { AuthResponse } from "@/types";
 import {
   Card,
   CardContent,
@@ -15,9 +14,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-export default function RegisterPage() {
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
+export default function LoginPage() {
+  const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const { login } = useAuth();
@@ -27,44 +25,39 @@ export default function RegisterPage() {
     setError("");
 
     try {
-      const data = await apiFetch<any>("/api/v1/auth/register", {
+      const data = await apiFetch<AuthResponse>("/api/v1/auth/login", {
         method: "POST",
-        body: JSON.stringify({ username, email, password }),
+        body: JSON.stringify({ login: loginId, password }),
       });
       login(data.token, data.user);
-    } catch (err: any) {
-      setError(err.message || "Registration failed");
+    } catch (err: unknown) {
+      console.log(err);
+      if (err instanceof Error) {
+        setError(err.message || "Login failed");
+      } else {
+        setError("Login failed");
+      }
     }
   };
 
   return (
     <div className="flex h-[calc(100vh-4rem)] items-center justify-center py-12">
-      <Card className="w-[350px]">
+      <Card className="w-87.5">
         <CardHeader>
-          <CardTitle>Register</CardTitle>
-          <CardDescription>Create a new account.</CardDescription>
+          <CardTitle>Login</CardTitle>
+          <CardDescription>
+            Enter your email or username to login.
+          </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent>
             <div className="grid w-full items-center gap-4">
               <div className="flex flex-col space-y-1.5">
                 <Input
-                  id="username"
-                  placeholder="Username (3-30 chars)"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  required
-                  minLength={3}
-                  maxLength={30}
-                />
-              </div>
-              <div className="flex flex-col space-y-1.5">
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="Email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  id="login"
+                  placeholder="Email or Username"
+                  value={loginId}
+                  onChange={(e) => setLoginId(e.target.value)}
                   required
                 />
               </div>
@@ -72,11 +65,10 @@ export default function RegisterPage() {
                 <Input
                   id="password"
                   type="password"
-                  placeholder="Password (min 6 chars)"
+                  placeholder="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  minLength={6}
                 />
               </div>
               {error && <p className="text-sm text-red-500">{error}</p>}
@@ -84,12 +76,12 @@ export default function RegisterPage() {
           </CardContent>
           <CardFooter className="flex flex-col items-start gap-4">
             <Button className="w-full" type="submit">
-              Register
+              Login
             </Button>
             <p className="text-sm text-slate-500">
-              Already have an account?{" "}
-              <Link href="/login" className="underline text-slate-900">
-                Login
+              Don't have an account?{" "}
+              <Link to="/register" className="underline text-slate-900">
+                Register
               </Link>
             </p>
           </CardFooter>

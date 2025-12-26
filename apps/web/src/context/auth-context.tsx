@@ -1,15 +1,6 @@
-"use client";
-
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-
-interface User {
-  id: string;
-  username: string;
-  displayName?: string;
-  avatarUrl?: string;
-  email?: string;
-}
+import { useNavigate } from "react-router-dom";
+import { User } from "@/types";
 
 interface AuthContextType {
   user: User | null;
@@ -25,7 +16,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const router = useRouter();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const storedToken = localStorage.getItem("token");
@@ -43,7 +34,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(newUser);
     localStorage.setItem("token", newToken);
     localStorage.setItem("user", JSON.stringify(newUser));
-    router.push("/");
+    navigate("/");
   };
 
   const logout = () => {
@@ -51,7 +42,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    router.push("/login");
+    navigate("/login");
   };
 
   return (

@@ -6,7 +6,10 @@ import { and, desc, eq } from 'drizzle-orm'
 import Elysia, { t } from 'elysia'
 import { uuidv7 } from 'uuidv7'
 
-export const resourcesController = new Elysia({ prefix: '/resources' })
+export const resourcesController = new Elysia({
+	prefix: '/resources',
+	tags: ['resources'],
+})
 	.use(dbPlugin)
 	.use(authPlugin)
 	.get(
@@ -90,15 +93,26 @@ export const resourcesController = new Elysia({ prefix: '/resources' })
 				fileSize: t.Number(),
 				filename: t.String(),
 			}),
+			detail: {
+				description: '创建资源记录',
+			},
 		},
 	)
-	.get('/all', async ({ user, db, status }) => {
-		if (!user) return status(401, '请先登录')
+	.get(
+		'/user-all',
+		async ({ user, db, status }) => {
+			if (!user) return status(401, '请先登录')
 
-		const result = await db.query.resources.findMany({
-			where: eq(resources.userId, user.id),
-			orderBy: [desc(resources.createdAt)],
-		})
+			const result = await db.query.resources.findMany({
+				where: eq(resources.userId, user.id),
+				orderBy: [desc(resources.createdAt)],
+			})
 
-		return result
-	})
+			return result
+		},
+		{
+			detail: {
+				description: '获取该用户所有资源',
+			},
+		},
+	)

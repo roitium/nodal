@@ -1,12 +1,14 @@
 import { users } from '@/db/schema'
+import { authPlugin } from '@/plugins/auth'
 import { dbPlugin } from '@/plugins/db'
 import { jwt } from '@elysiajs/jwt'
 import { eq, or } from 'drizzle-orm'
 import { Elysia, t } from 'elysia'
 import { uuidv7 } from 'uuidv7'
 
-export const authController = new Elysia({ prefix: '/auth' })
+export const authController = new Elysia({ prefix: '/auth', tags: ['auth'] })
 	.use(dbPlugin)
+	.use(authPlugin)
 	.use(
 		jwt({
 			name: 'jwt',
@@ -114,11 +116,46 @@ export const authController = new Elysia({ prefix: '/auth' })
 		},
 		{
 			body: t.Object({
-				login: t.String(), // 既可是 email 也可是 username
+				login: t.String({ description: 'Username 或 Email 登录' }), // 既可是 email 也可是 username
 				password: t.String(),
 			}),
 			detail: {
-				description: '登录用户。支持用 Username 或 Email 登录',
+				description: '登录用户',
+			},
+		},
+	)
+	.patch(
+		'/me',
+		async ({ user, status, body, db }) => {
+			if (!user) return status(401, '请先登录')
+
+			const { displayName, avatarUrl, bio } = body
+
+			const userRecord = await db.query.users.findFirst({
+				where: eq(users.id, user.id),
+			})
+
+			if (!userRecord) return status(404, '用户不存在')
+
+			await db
+				.update(users)
+				.set({
+					displayName: displayName ?? userRecord.displayName,
+					avatarUrl: avatarUrl ?? userRecord.avatarUrl,
+					bio: bio ?? userRecord.bio,
+				})
+				.where(eq(users.id, user.id))
+
+			return user
+		},
+		{
+			body: t.Object({
+				displayName: t.Optional(t.String()),
+				avatarUrl: t.Optional(t.String()),
+				bio: t.Optional(t.String()),
+			}),
+			detail: {
+				description: '更新用户信息',
 			},
 		},
 	)
