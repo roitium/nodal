@@ -14,7 +14,7 @@ import retrofit2.Retrofit
 import java.util.concurrent.TimeUnit
 
 object NodalRepository {
-    private const val BASE_URL = "http://10.0.2.2:5000/"
+    private const val BASE_URL = "https://nodal.roitium.com/"
     private var authToken: String? = null
     var currentUser: User? = null
         private set
