@@ -18,7 +18,7 @@ object NodalRepository {
     private var authToken: String? = null
     var currentUser: User? = null
         private set
-    
+
     private var sharedPreferences: android.content.SharedPreferences? = null
 
     private val json = Json {
@@ -54,9 +54,11 @@ object NodalRepository {
         val original = chain.request()
         val token = authToken
         if (token != null) {
-            chain.proceed(original.newBuilder()
-                .header("Authorization", "Bearer $token")
-                .build())
+            chain.proceed(
+                original.newBuilder()
+                    .header("Authorization", "Bearer $token")
+                    .build()
+            )
         } else {
             chain.proceed(original)
         }
@@ -64,7 +66,9 @@ object NodalRepository {
 
     private val client = OkHttpClient.Builder()
         .addInterceptor(authInterceptor)
-        .addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY })
+        .addInterceptor(HttpLoggingInterceptor().apply {
+            level = HttpLoggingInterceptor.Level.BODY
+        })
         .connectTimeout(30, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
         .writeTimeout(30, TimeUnit.SECONDS)
@@ -78,7 +82,7 @@ object NodalRepository {
         .create(NodalApi::class.java)
 
     fun isLoggedIn(): Boolean = authToken != null
-    
+
     @SuppressLint("UseKtx")
     fun logout() {
         authToken = null
@@ -115,7 +119,62 @@ object NodalRepository {
         username: String? = null
     ) = api.getTimeline(limit, cursorCreatedAt, cursorId, username)
 
-    suspend fun publish(content: String, visibility: String = "public"): Memo {
-        return api.publish(PublishRequest(content = content, visibility = visibility))
+    suspend fun publish(
+        content: String,
+        visibility: String = "public",
+        resources: List<String> = emptyList()
+    ): Memo {
+        return api.publish(
+            PublishRequest(
+                content = content,
+                visibility = visibility,
+                resources = resources
+            )
+        )
+    }
+
+    suspend fun uploadFile(context: Context, uri: android.net.Uri): Resource {
+        val contentResolver = context.contentResolver
+        val type = contentResolver.getType(uri) ?: "application/octet-stream"
+        val ext = android.webkit.MimeTypeMap.getSingleton().getExtensionFromMimeType(type) ?: "bin"
+
+        // 1. Get Upload URL
+        val uploadUrlRes = api.getUploadUrl(type, ext)
+
+        // 2. Upload Content
+        val inputStream = contentResolver.openInputStream(uri) ?: throw Exception("Cannot open URI")
+        val bytes = inputStream.readBytes()
+        inputStream.close()
+
+        val requestBody = okhttp3.RequestBody.create(type.toMediaType(), bytes)
+        val uploadResponse = api.uploadFileContent(uploadUrlRes.uploadUrl, requestBody)
+
+        if (!uploadResponse.isSuccessful) {
+            throw Exception("Upload failed: ${uploadResponse.code()}")
+        }
+
+        // 3. Record Upload
+        val filename = try {
+            var name = "unknown"
+            val cursor = contentResolver.query(uri, null, null, null, null)
+            cursor?.use {
+                if (it.moveToFirst()) {
+                    val nameIndex = it.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                    if (nameIndex >= 0) name = it.getString(nameIndex)
+                }
+            }
+            name
+        } catch (e: Exception) {
+            "unknown.$ext"
+        }
+
+        return api.recordUpload(
+            RecordUploadRequest(
+                path = uploadUrlRes.path,
+                fileType = type,
+                fileSize = bytes.size.toLong(),
+                filename = filename
+            )
+        )
     }
 }

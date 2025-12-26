@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -67,6 +68,19 @@ fun MemoCard(memo: Memo) {
                     codeFence = highlightedCodeFence,
                 )
             )
+            if (memo.resources.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                memo.resources.forEach { resource ->
+                    AsyncImage(
+                        model = resource.externalLink,
+                        contentDescription = "Resource",
+                        modifier = Modifier
+                            .size(80.dp)
+                            .clip(RoundedCornerShape(8.dp)),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+            }
 
             if (memo.visibility == "private") {
                 Spacer(modifier = Modifier.height(4.dp))

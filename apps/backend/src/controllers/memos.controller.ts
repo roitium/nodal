@@ -162,12 +162,13 @@ export const memosController = new Elysia({ prefix: '/memos', tags: ['memos'] })
 					visibility: body.visibility ?? 'public',
 					path: path,
 					isPinned: body.isPinned ?? false,
+					createdAt: new Date(body.createdAt ?? Date.now()),
 				})
 
 				if (body.resources && body.resources.length > 0) {
 					await tx
 						.update(resources)
-						.set({ memoId: inserted?.id })
+						.set({ memoId: newId })
 						.where(
 							and(
 								inArray(resources.id, body.resources),
@@ -177,11 +178,10 @@ export const memosController = new Elysia({ prefix: '/memos', tags: ['memos'] })
 				}
 			})
 
-			const inserted = await db.query.memos.findFirst({
+			const result = await db.query.memos.findFirst({
 				where: eq(memos.id, newId),
 			})
-
-			return inserted
+			return result
 		},
 		{
 			body: t.Object({
@@ -193,6 +193,7 @@ export const memosController = new Elysia({ prefix: '/memos', tags: ['memos'] })
 				quoteId: t.Optional(t.String({ format: 'uuid' })),
 				resources: t.Optional(t.Array(t.String({ format: 'uuid' }))),
 				isPinned: t.Optional(t.Boolean()),
+				createdAt: t.Optional(t.Number()),
 			}),
 			detail: {
 				description: '发布 / 评论 / 转发',
@@ -293,6 +294,7 @@ export const memosController = new Elysia({ prefix: '/memos', tags: ['memos'] })
 				content,
 				resources: resourcesIds,
 				qouteId,
+				createdAt,
 			} = body
 
 			await db.transaction(async (tx) => {
@@ -303,6 +305,7 @@ export const memosController = new Elysia({ prefix: '/memos', tags: ['memos'] })
 						visibility: visibility ?? memo.visibility,
 						content: content ?? memo.content,
 						quoteId: qouteId ?? memo.quoteId,
+						createdAt: createdAt ? new Date(createdAt) : memo.createdAt,
 					})
 					.where(eq(memos.id, id))
 
@@ -342,6 +345,7 @@ export const memosController = new Elysia({ prefix: '/memos', tags: ['memos'] })
 				content: t.Optional(t.String()),
 				resources: t.Optional(t.Array(t.String({ format: 'uuid' }))),
 				qouteId: t.Optional(t.String({ format: 'uuid' })),
+				createdAt: t.Optional(t.Number()),
 			}),
 		},
 	)

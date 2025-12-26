@@ -5,7 +5,6 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.ui.graphics.vector.ImageVector
 
 sealed class Screen(
@@ -18,8 +17,6 @@ sealed class Screen(
     object Register : Screen("register", "Register", Icons.Default.Person)
     object Login : Screen("login", "Login", Icons.Default.Person)
     object Explore : Screen("explore", "Explore", Icons.Default.Map)
-
-    companion object {
-        val drawerScreens = listOf(YourMemos, Explore)
-    }
 }
+
+val drawerScreens = listOf(Screen.YourMemos, Screen.Explore)
