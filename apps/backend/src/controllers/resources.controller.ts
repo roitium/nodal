@@ -59,6 +59,10 @@ export const resourcesController = new Elysia({ prefix: '/resources' })
 
 			const { path, fileType, fileSize, filename } = body
 
+			if (!path.startsWith(`resources/${user.id}`)) {
+				return status(403, '请求路径不合法')
+			}
+
 			const publicUrl = storageService.getPublicUrl(path)
 
 			const [result] = await db
