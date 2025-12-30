@@ -1,0 +1,68 @@
+name: Android Test Release
+
+on:
+  # 为了测试方便，我加了 workflow_dispatch，
+  # 这样你在 GitHub 网页上点个 "Run workflow" 按钮就能立刻开始打包，不用非得打 tag
+  workflow_dispatch: 
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./apps/android
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'zulu'
+          cache: 'gradle'
+
+      # 【核心步骤】：现场生成一个临时签名文件
+      - name: Generate Temporary Keystore
+        run: |
+          keytool -genkeypair \
+            -alias test_alias \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -keystore ./temp_keystore.jks \
+            -storepass 123456 \
+            -keypass 123456 \
+            -dname "CN=Test,OU=Test,O=Test,L=Test,S=Test,C=US"
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      # 打包 APK，并注入刚才生成的临时密码
+      - name: Build Release APK
+        run: ./gradlew assembleRelease
+        env:
+          KEYSTORE_FILE: ../temp_keystore.jks # 注意路径，gradlew 在 apps/android，文件也在那里
+          KEYSTORE_PASSWORD: "123456"
+          KEY_ALIAS: "test_alias"
+          KEY_PASSWORD: "123456"
+
+      # 上传 APK 到 GitHub Release (如果是 tag 触发)
+      - name: Release to GitHub
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            apps/android/app/build/outputs/apk/release/*.apk
+          draft: false
+          prerelease: true # 标记为预发布，适合测试版
+
+      # 【新增】：如果是手动点击触发 (workflow_dispatch)，直接把 APK 上传到 Artifacts
+      # 这样你不用发版，构建完直接在 Action 页面就能下载
+      - name: Upload APK to Artifacts
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-test
+          path: apps/android/app/build/outputs/apk/release/*.apk

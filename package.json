@@ -1,0 +1,16 @@
+{
+  "name": "nodal-monorepo",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "dependencies": {
+    "@radix-ui/react-avatar": "^1.1.11",
+    "@radix-ui/react-slot": "^1.2.4",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.562.0",
+    "tailwind-merge": "^3.4.0"
+  }
+}
