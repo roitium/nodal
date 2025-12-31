@@ -14,11 +14,14 @@ object NodalDestinations {
     const val PUBLISH_ROUTE = "publish"
     const val LOGIN_ROUTE = "login"
     const val REGISTER_ROUTE = "register"
+    const val RESOURCE_ROUTE = "resource"
+    const val MEMO_DETAIL_ROUTE = "memo_detail/{memoId}"
 
     object Args {
         const val TYPE = "type"
         const val USERNAME = "username"
         const val URL = "url"
+        const val MEMO_ID = "memoId"
     }
 
     /**
@@ -42,10 +45,13 @@ object NodalDestinations {
 
     /**
      * 生成图片查看器的跳转链接
-     * 注意：必须对 URL 进行编码，否则 '/' 符号会打断 Navigation 路由
      */
     fun buildImageViewerRoute(url: String): String {
         val encodedUrl = URLEncoder.encode(url, StandardCharsets.UTF_8.toString())
         return "image_viewer/$encodedUrl"
+    }
+
+    fun buildMemoDetailRoute(id: String): String {
+        return "memo_detail/$id"
     }
 }

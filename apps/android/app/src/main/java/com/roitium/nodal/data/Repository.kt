@@ -94,9 +94,9 @@ object NodalRepository {
         .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
         .build()
 
-    val memoApi: NodalMemoApi = retrofitClient.create(NodalMemoApi::class.java)
-    val resourceApi: NodalResourceApi = retrofitClient.create(NodalResourceApi::class.java)
-    val authApi: NodalAuthApi = retrofitClient.create(NodalAuthApi::class.java)
+    private val memoApi: NodalMemoApi = retrofitClient.create(NodalMemoApi::class.java)
+    private val resourceApi: NodalResourceApi = retrofitClient.create(NodalResourceApi::class.java)
+    private val authApi: NodalAuthApi = retrofitClient.create(NodalAuthApi::class.java)
 
     suspend fun logout() {
         authTokenManager?.clearAuthInfo()
@@ -151,13 +151,15 @@ object NodalRepository {
     suspend fun publish(
         content: String,
         visibility: String = "public",
-        resources: List<String> = emptyList()
+        resources: List<String> = emptyList(),
+        referredMemoId: String? = null
     ): Memo {
         val response = memoApi.publish(
             PublishRequest(
                 content = content,
                 visibility = visibility,
-                resources = resources
+                resources = resources,
+                quoteId = referredMemoId
             )
         )
         when (val result = response.toApiResult()) {
@@ -263,6 +265,45 @@ object NodalRepository {
 
             is ApiResult.Success -> {
                 return true
+            }
+        }
+    }
+
+    suspend fun getUserAllResources(): List<Resource> {
+        val response = resourceApi.getUserAllResources()
+        when (val result = response.toApiResult()) {
+            is ApiResult.Failure -> {
+                throw BusinessException(result.code, result.errorMessage, result.traceId)
+            }
+
+            is ApiResult.Success -> {
+                return result.data
+            }
+        }
+    }
+
+    suspend fun getMemoDetail(id: String): Memo {
+        val response = memoApi.getMemoDetail(id)
+        when (val result = response.toApiResult()) {
+            is ApiResult.Failure -> {
+                throw BusinessException(result.code, result.errorMessage, result.traceId)
+            }
+
+            is ApiResult.Success -> {
+                return result.data
+            }
+        }
+    }
+
+    suspend fun searchMemos(keyword: String): List<Memo> {
+        val response = memoApi.searchMemos(keyword)
+        when (val result = response.toApiResult()) {
+            is ApiResult.Failure -> {
+                throw BusinessException(result.code, result.errorMessage, result.traceId)
+            }
+
+            is ApiResult.Success -> {
+                return result.data
             }
         }
     }

@@ -33,4 +33,10 @@ interface NodalMemoApi {
         @Path("memoId") memoId: String,
         @Body request: PatchMemoRequest
     ): Response<Boolean>
+
+    @GET("/api/v1/memos/{memoId}")
+    suspend fun getMemoDetail(@Path("memoId") memoId: String): Response<Memo>
+
+    @GET("/api/v1/memos/search")
+    suspend fun searchMemos(@Query("keyword") keyword: String): Response<List<Memo>>
 }

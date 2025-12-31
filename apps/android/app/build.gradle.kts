@@ -5,6 +5,8 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.devtools.ksp)
+    alias(libs.plugins.hilt.android)
 }
 
 android {
@@ -75,6 +77,10 @@ dependencies {
     implementation(libs.retrofit.kotlinx.serialization.json)
     implementation(libs.coil.compose)
     implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.compose.foundation)
+    implementation(libs.androidx.compose.foundation.layout)
+    implementation(libs.androidx.material3)
+    implementation(libs.androidx.compose.runtime)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -88,6 +94,8 @@ dependencies {
     implementation(libs.datastore.preferences)
     implementation(libs.tink)
     implementation(libs.splashscreen)
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.android.compiler)
 }
 
 configurations.all {

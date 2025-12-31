@@ -1,37 +1,26 @@
 package com.roitium.nodal.ui.screens.timeline
 
+import SnackbarManager
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
 import com.roitium.nodal.data.AuthState
 import com.roitium.nodal.data.Cursor
 import com.roitium.nodal.data.Memo
 import com.roitium.nodal.data.NodalRepository
-import kotlinx.coroutines.channels.Channel
+import dagger.hilt.android.lifecycle.HiltViewModel
+import jakarta.inject.Inject
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 
-class TimelineViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel() {
-    companion object {
-        val Factory: ViewModelProvider.Factory = viewModelFactory {
-            initializer {
-                val savedStateHandle = createSavedStateHandle()
-
-                TimelineViewModel(
-                    savedStateHandle = savedStateHandle
-                )
-            }
-        }
-    }
+@HiltViewModel
+class TimelineViewModel @Inject constructor(
+    savedStateHandle: SavedStateHandle
+) : ViewModel() {
 
     private val timelineType: String? = savedStateHandle["type"]
     private val targetUsername: String? = savedStateHandle["username"]
@@ -51,16 +40,6 @@ class TimelineViewModel(private val savedStateHandle: SavedStateHandle) : ViewMo
     var currentUsername: String? = targetUsername
     var appBarTitle =
         if (timelineType == "global") "Explore" else if (targetUsername != null) "@$targetUsername" else "Your Memos"
-
-    private val _snackbarEvent = Channel<String>()
-
-    val snackbarEvent = _snackbarEvent.receiveAsFlow()
-
-    fun showSnackbar(message: String) {
-        viewModelScope.launch {
-            _snackbarEvent.send(message)
-        }
-    }
 
     init {
         if (timelineType == "global") {
@@ -131,9 +110,9 @@ class TimelineViewModel(private val savedStateHandle: SavedStateHandle) : ViewMo
             _memos.remove(memoToDelete)
             try {
                 NodalRepository.deleteMemo(id)
-                showSnackbar("删除成功")
+                SnackbarManager.showMessage("删除成功")
             } catch (e: Exception) {
-                showSnackbar(e.message ?: "删除失败")
+                SnackbarManager.showMessage(e.message ?: "删除失败")
                 _memos.add(originalIndex, memoToDelete)
             }
         }

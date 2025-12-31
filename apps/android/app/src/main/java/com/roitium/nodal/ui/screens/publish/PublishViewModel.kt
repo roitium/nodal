@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.roitium.nodal.data.Memo
 import com.roitium.nodal.data.NodalRepository
 import com.roitium.nodal.data.Resource
 import kotlinx.coroutines.async
@@ -30,6 +31,13 @@ class PublishViewModel : ViewModel() {
         private set
 
     var uploadedResources = emptyList<Resource>()
+    var referredMemo by mutableStateOf<Memo?>(null)
+        private set
+
+    fun updateReferredMemoId(memo: Memo) {
+        referredMemo = memo
+    }
+
 
     fun onContentChanged(newContent: String) {
         content = newContent
@@ -88,7 +96,8 @@ class PublishViewModel : ViewModel() {
                 NodalRepository.publish(
                     content = content,
                     visibility = if (isPrivate) "private" else "public",
-                    resources = uploadedResources.map { it.id }
+                    resources = uploadedResources.map { it.id },
+                    referredMemoId = referredMemo?.id
                 )
                 onSuccess()
             } catch (e: Exception) {

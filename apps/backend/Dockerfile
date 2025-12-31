@@ -5,7 +5,7 @@ WORKDIR /app
 COPY package.json ./
 # Note: If you want to respect the root lockfile in a monorepo, 
 # you might need to adjust the build context and copy the root bun.lock
-RUN bun install --production --no-cache
+RUN bun install --production
 
 # Copy configuration files
 COPY tsconfig.json ./

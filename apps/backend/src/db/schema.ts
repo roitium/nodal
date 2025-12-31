@@ -1,4 +1,4 @@
-import { relations } from 'drizzle-orm'
+import { relations, sql } from 'drizzle-orm'
 import {
 	boolean,
 	foreignKey,
@@ -62,6 +62,10 @@ export const memos = pgTable(
 		index('idx_memos_parent').on(table.parentId),
 		index('idx_memos_quote').on(table.quoteId),
 		index('idx_memos_path').on(table.path),
+		index('idx_memos_content_trgm').using(
+			'gin',
+			sql`${table.content} gin_trgm_ops`,
+		),
 
 		foreignKey({
 			columns: [table.parentId],

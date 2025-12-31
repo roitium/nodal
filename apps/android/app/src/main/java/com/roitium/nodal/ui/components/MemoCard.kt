@@ -1,6 +1,8 @@
 package com.roitium.nodal.ui.components
 
+import SnackbarManager
 import android.text.format.DateUtils
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -18,9 +20,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Public
+import androidx.compose.material.icons.filled.RemoveRedEye
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CardElevation
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -41,8 +46,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import coil.request.CachePolicy
+import coil.request.ImageRequest
 import com.mikepenz.markdown.coil2.Coil2ImageTransformerImpl
 import com.mikepenz.markdown.compose.components.markdownComponents
 import com.mikepenz.markdown.compose.elements.highlightedCodeBlock
@@ -56,9 +65,13 @@ import java.time.Instant
 @Composable
 fun MemoCard(
     memo: Memo,
+    containerColor: Color = MaterialTheme.colorScheme.surfaceContainer,
+    elevation: CardElevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+    containerModifier: Modifier = Modifier,
     onClickImage: (url: String?) -> Unit,
     onDelete: (id: String) -> Unit,
-    showSnackbar: (message: String) -> Unit
+    onClickMemo: ((id: String) -> Unit)?,
+    onClickReferredMemo: ((id: String) -> Unit)?
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
     var expandedDropdownMenu by remember { mutableStateOf(false) }
@@ -69,6 +82,8 @@ fun MemoCard(
     var memoResources by remember { mutableStateOf(memo.resources) }
 
     val scope = rememberCoroutineScope()
+
+    Log.d("MemoDetailScreen", "resources: $memoResources")
 
     fun editMemo() {
         editMode = false
@@ -84,23 +99,38 @@ fun MemoCard(
                     null
                 )
             } catch (e: Exception) {
-                showSnackbar(e.message ?: "修改失败")
+                SnackbarManager.showMessage(e.message ?: "修改失败")
             }
-            showSnackbar("修改成功")
+            SnackbarManager.showMessage("修改成功")
         }
     }
 
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        modifier = containerModifier
+            .fillMaxWidth()
+            .then(
+                if (onClickMemo != null) {
+                    Modifier.clickable { onClickMemo(memo.id) }
+                } else {
+                    Modifier
+                }
+            ),
+        elevation = elevation,
+        colors = CardDefaults.cardColors(
+            containerColor = containerColor,
+        ),
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 AsyncImage(
-                    model = memo.author?.avatarUrl,
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(memo.author?.avatarUrl)
+                        .diskCachePolicy(CachePolicy.ENABLED)
+                        .memoryCachePolicy(CachePolicy.ENABLED)
+                        .build(),
                     contentDescription = "Avatar",
                     modifier = Modifier
                         .size(40.dp)
@@ -109,10 +139,26 @@ fun MemoCard(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = memo.author?.displayName ?: memo.author?.username ?: "Unknown",
-                        style = MaterialTheme.typography.titleMedium
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = memo.author?.displayName ?: memo.author?.username ?: "Unknown",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        if (memoVisibility == "public") {
+                            Icon(
+                                Icons.Default.Public,
+                                contentDescription = "public",
+                                modifier = Modifier.size(16.dp)
+                            )
+                        } else {
+                            Icon(
+                                Icons.Default.RemoveRedEye,
+                                contentDescription = "private",
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
                     Text(
                         text = DateUtils.getRelativeTimeSpanString(
                             Instant.parse(memoCreatedAt).toEpochMilli(),
@@ -158,10 +204,14 @@ fun MemoCard(
                         Box(
                             modifier = Modifier
                                 .padding(4.dp)
-                                .size(80.dp)
+                                .size(100.dp)
                         ) {
                             AsyncImage(
-                                model = resource.externalLink,
+                                model = ImageRequest.Builder(LocalContext.current)
+                                    .data(resource.externalLink)
+                                    .diskCachePolicy(CachePolicy.DISABLED)
+                                    .memoryCachePolicy(CachePolicy.ENABLED)
+                                    .build(),
                                 contentDescription = "Resource",
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier
@@ -230,13 +280,17 @@ fun MemoCard(
                     )
                 )
                 if (memoResources.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
                     memoResources.forEach { resource ->
                         AsyncImage(
-                            model = resource.externalLink,
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(resource.externalLink)
+                                .diskCachePolicy(CachePolicy.DISABLED)
+                                .memoryCachePolicy(CachePolicy.ENABLED)
+                                .build(),
                             contentDescription = "Resource",
                             modifier = Modifier
-                                .size(80.dp)
+                                .size(100.dp)
                                 .clip(RoundedCornerShape(8.dp))
                                 .clickable {
                                     onClickImage(resource.externalLink)
@@ -245,14 +299,32 @@ fun MemoCard(
                         )
                     }
                 }
+                if (memo.quotedMemo != null) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .then(
+                                if (onClickReferredMemo != null) {
+                                    Modifier.clickable { onClickReferredMemo(memo.quotedMemo.id) }
+                                } else {
+                                    Modifier
+                                }
+                            ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp)
+                        ) {
+                            Text(
+                                text = memo.quotedMemo.content,
+                                style = MaterialTheme.typography.bodyMedium,
+                                maxLines = 5,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
 
-                if (memoVisibility == "private") {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "私密",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                    }
                 }
             }
         }

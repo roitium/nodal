@@ -55,7 +55,10 @@ data class Resource(
     val id: String,
     val externalLink: String? = null,
     val type: String,
-    val size: Int
+    val size: Int,
+    val createdAt: String,
+    val filename: String,
+    val memoId: String?
 )
 
 @Serializable

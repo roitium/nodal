@@ -5,7 +5,7 @@ import { subdomainPlugin } from '@/plugins/subdomain'
 import { traceIdPlugin } from '@/plugins/trace'
 import { GeneralCode, MemoCode, UserCode } from '@/utils/code'
 import { fail, success } from '@/utils/response'
-import { and, desc, eq, inArray, isNull, lt, or } from 'drizzle-orm'
+import { and, desc, eq, inArray, isNull, like, lt, or } from 'drizzle-orm'
 import { Elysia, t } from 'elysia'
 import { uuidv7 } from 'uuidv7'
 
@@ -96,6 +96,9 @@ export const memosController = new Elysia({ prefix: '/memos', tags: ['memos'] })
 							externalLink: true,
 							type: true,
 							size: true,
+							memoId: true,
+							filename: true,
+							createdAt: true,
 						},
 					},
 					replies: {
@@ -268,6 +271,9 @@ export const memosController = new Elysia({ prefix: '/memos', tags: ['memos'] })
 							externalLink: true,
 							type: true,
 							size: true,
+							memoId: true,
+							filename: true,
+							createdAt: true,
 						},
 					},
 					replies: true,
@@ -456,6 +462,34 @@ export const memosController = new Elysia({ prefix: '/memos', tags: ['memos'] })
 				resources: t.Optional(t.Array(t.String({ format: 'uuid' }))),
 				qouteId: t.Optional(t.String({ format: 'uuid' })),
 				createdAt: t.Optional(t.Number()),
+			}),
+		},
+	)
+	.get(
+		'/search',
+		async ({ user, db, traceId, query, status }) => {
+			if (!user)
+				return status(
+					401,
+					fail({
+						message: '请先登录',
+						code: GeneralCode.NeedLogin,
+						traceId: traceId,
+					}),
+				)
+			const keyword = `%${query.keyword}%`
+			const result = await db.query.memos.findMany({
+				where: and(
+					like(memos.content, keyword),
+					or(eq(memos.userId, user.id), eq(memos.visibility, 'public')),
+				),
+				orderBy: [desc(memos.createdAt)],
+			})
+			return status(200, success({ data: result, traceId: traceId }))
+		},
+		{
+			query: t.Object({
+				keyword: t.String(),
 			}),
 		},
 	)

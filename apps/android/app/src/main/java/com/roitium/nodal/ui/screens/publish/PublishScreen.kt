@@ -27,7 +27,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Link
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
@@ -51,6 +54,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
@@ -72,6 +76,7 @@ fun PublishScreen(
         }
     val hasUnsavedChanges =
         viewModel.content.isNotBlank() || viewModel.selectedResources.isNotEmpty()
+    var showReferredMemoDialog by remember { mutableStateOf(false) }
 
     BackHandler(
         enabled = hasUnsavedChanges,
@@ -205,16 +210,43 @@ fun PublishScreen(
                 }
                 Spacer(modifier = Modifier.height(16.dp))
             }
+            if (viewModel.referredMemo != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                AssistChip(
+                    onClick = { showReferredMemoDialog = true },
+                    label = {
+                        Text(
+                            viewModel.referredMemo!!.content,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Default.Link,
+                            contentDescription = null,
+                            modifier = Modifier.size(AssistChipDefaults.IconSize)
+                        )
+                    }
+                )
+            }
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                IconButton(onClick = {
-                    pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo))
-                }) {
-                    Icon(Icons.Default.Image, contentDescription = "Add Media")
+                Row {
+                    IconButton(onClick = {
+                        pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo))
+                    }) {
+                        Icon(Icons.Default.Image, contentDescription = "Add Media")
+                    }
+                    IconButton(onClick = {
+                        showReferredMemoDialog = true
+                    }) {
+                        Icon(Icons.Default.Link, contentDescription = "Refer Memo")
+                    }
                 }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -225,6 +257,14 @@ fun PublishScreen(
                     Text("私密")
                 }
             }
+            ReferMemoDialog(
+                showDialog = showReferredMemoDialog,
+                onDismiss = { showReferredMemoDialog = false },
+                onSetReferredMemo = { memoId ->
+                    viewModel.updateReferredMemoId(memoId)
+                    showReferredMemoDialog = false
+                }
+            )
         }
     }
 }

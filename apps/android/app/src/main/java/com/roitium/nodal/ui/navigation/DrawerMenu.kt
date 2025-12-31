@@ -25,5 +25,12 @@ val drawerScreens = listOf(
         icon = Icons.Default.Map,
         route = NodalDestinations.buildTimelineRoute(TIMELINE_TYPE.GLOBAL),
         type = "global"
+    ),
+
+    DrawerItem(
+        label = "Resources",
+        icon = Icons.Default.Map,
+        route = NodalDestinations.RESOURCE_ROUTE,
+        type = null
     )
 )

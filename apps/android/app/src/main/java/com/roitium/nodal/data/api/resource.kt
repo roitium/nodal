@@ -27,4 +27,7 @@ interface NodalResourceApi {
         @Body body: okhttp3.RequestBody
     ): retrofit2.Response<Unit>
 
+    @GET("/api/v1/resources/user-all")
+    suspend fun getUserAllResources(): Response<List<Resource>>
+
 }

@@ -1,5 +1,6 @@
 package com.roitium.nodal.ui.screens.timeline
 
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,8 +23,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -32,11 +31,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.roitium.nodal.ui.components.MemoCard
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,16 +46,11 @@ fun TimelineScreen(
     viewModel: TimelineViewModel = viewModel(),
     onNavigateToPublish: () -> Unit,
     onOpenDrawer: () -> Unit,
-    onClickImage: (url: String?) -> Unit
+    onClickImage: (url: String?) -> Unit,
+    onNavigateToMemoDetail: (memoId: String) -> Unit
 ) {
     val listState = rememberLazyListState()
-    val snackbarHostState = remember { SnackbarHostState() }
-
-    LaunchedEffect(Unit) {
-        viewModel.snackbarEvent.collect { message ->
-            snackbarHostState.showSnackbar(message)
-        }
-    }
+    val coroutineScope = rememberCoroutineScope()
 
     val shouldLoadMore by remember {
         derivedStateOf {
@@ -65,6 +62,8 @@ fun TimelineScreen(
     }
 
     LaunchedEffect(shouldLoadMore) {
+        // 从其他页面返回时，虽然 ViewModel 还存在，但是 Screen 会 recomposition，也会导致该 effect 重新运行。所以我们还需要判断一下 shouldLoadMore 具体的值
+        if (!shouldLoadMore) return@LaunchedEffect
         viewModel.loadMemos(false)
     }
 
@@ -76,10 +75,19 @@ fun TimelineScreen(
                     IconButton(onClick = onOpenDrawer) {
                         Icon(Icons.Default.Menu, contentDescription = "菜单")
                     }
-                }
+                },
+                modifier = Modifier
+                    .pointerInput(Unit) {
+                        detectTapGestures(
+                            onDoubleTap = {
+                                coroutineScope.launch {
+                                    listState.animateScrollToItem(0)
+                                }
+                            },
+                        )
+                    }
             )
         },
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         floatingActionButton = {
             FloatingActionButton(onClick = onNavigateToPublish) {
                 Icon(Icons.Default.Add, contentDescription = "发布")
@@ -119,11 +127,12 @@ fun TimelineScreen(
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         items(viewModel.memos, key = { memo -> memo.id }) { memo ->
-                            MemoCard(memo, onClickImage, onDelete = { id ->
-                                viewModel.deleteMemo(id)
-                            }, showSnackbar = { message ->
-                                viewModel.showSnackbar(message)
-                            })
+                            MemoCard(
+                                memo, onClickImage = onClickImage, onDelete = { id ->
+                                    viewModel.deleteMemo(id)
+                                }, onClickMemo = onNavigateToMemoDetail,
+                                onClickReferredMemo = onNavigateToMemoDetail
+                            )
                         }
                         if (viewModel.isLoading && viewModel.memos.isNotEmpty()) {
                             item {
