@@ -36,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.roitium.nodal.ui.components.MemoCard
 import kotlinx.coroutines.launch
@@ -51,6 +52,7 @@ fun TimelineScreen(
 ) {
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     val shouldLoadMore by remember {
         derivedStateOf {
@@ -64,13 +66,13 @@ fun TimelineScreen(
     LaunchedEffect(shouldLoadMore) {
         // 从其他页面返回时，虽然 ViewModel 还存在，但是 Screen 会 recomposition，也会导致该 effect 重新运行。所以我们还需要判断一下 shouldLoadMore 具体的值
         if (!shouldLoadMore) return@LaunchedEffect
-        viewModel.loadMemos(false)
+        viewModel.loadMore()
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(viewModel.appBarTitle) },
+                title = { Text(uiState.title) },
                 navigationIcon = {
                     IconButton(onClick = onOpenDrawer) {
                         Icon(Icons.Default.Menu, contentDescription = "菜单")
@@ -99,25 +101,25 @@ fun TimelineScreen(
                 .padding(paddingValues)
                 .fillMaxSize()
         ) {
-            if (viewModel.isLoading && viewModel.memos.isEmpty()) {
+            if (uiState.isLoading && uiState.memos.isEmpty()) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-            } else if (viewModel.error != null && viewModel.memos.isEmpty()) {
+            } else if (uiState.error != null && uiState.memos.isEmpty()) {
                 Column(
                     modifier = Modifier.align(Alignment.Center),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(text = viewModel.error!!, color = MaterialTheme.colorScheme.error)
+                    Text(text = uiState.error!!, color = MaterialTheme.colorScheme.error)
                     Button(onClick = {
-                        viewModel.loadMemos(true)
+                        viewModel.refresh()
                     }) {
                         Text("重试")
                     }
                 }
             } else {
                 PullToRefreshBox(
-                    isRefreshing = viewModel.isLoading,
+                    isRefreshing = uiState.isLoading,
                     onRefresh = {
-                        viewModel.loadMemos(true)
+                        viewModel.refresh()
                     }
                 ) {
                     LazyColumn(
@@ -126,7 +128,7 @@ fun TimelineScreen(
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        items(viewModel.memos, key = { memo -> memo.id }) { memo ->
+                        items(uiState.memos, key = { memo -> memo.id }) { memo ->
                             MemoCard(
                                 memo, onClickImage = onClickImage, onDelete = { id ->
                                     viewModel.deleteMemo(id)
@@ -134,7 +136,7 @@ fun TimelineScreen(
                                 onClickReferredMemo = onNavigateToMemoDetail
                             )
                         }
-                        if (viewModel.isLoading && viewModel.memos.isNotEmpty()) {
+                        if (uiState.isLoading && uiState.memos.isNotEmpty()) {
                             item {
                                 Box(
                                     modifier = Modifier
@@ -146,7 +148,7 @@ fun TimelineScreen(
                                 }
                             }
                         }
-                        if (viewModel.memos.isNotEmpty() && !viewModel.isLoading && viewModel.nextCursor == null) {
+                        if (uiState.memos.isNotEmpty() && !uiState.isLoading && viewModel.nextCursor == null) {
                             item {
                                 Box(
                                     modifier = Modifier

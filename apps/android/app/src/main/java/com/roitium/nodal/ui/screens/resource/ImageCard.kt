@@ -19,7 +19,7 @@ import androidx.compose.ui.platform.LocalContext
 import coil.compose.AsyncImage
 import coil.request.CachePolicy
 import coil.request.ImageRequest
-import com.roitium.nodal.data.Resource
+import com.roitium.nodal.data.models.Resource
 
 @Composable
 fun ImageCard(

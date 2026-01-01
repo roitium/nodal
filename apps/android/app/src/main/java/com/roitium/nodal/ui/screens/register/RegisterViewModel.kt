@@ -6,7 +6,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.roitium.nodal.data.NodalRepository
-import com.roitium.nodal.data.RegisterRequest
+import com.roitium.nodal.data.models.RegisterRequest
 import kotlinx.coroutines.launch
 
 class RegisterViewModel : ViewModel() {

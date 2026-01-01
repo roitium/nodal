@@ -1,4 +1,4 @@
-package com.roitium.nodal.data
+package com.roitium.nodal.data.models
 
 import kotlinx.serialization.Serializable
 

@@ -1,67 +1,63 @@
 package com.roitium.nodal.ui.screens.memoDetail
 
 import SnackbarManager
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.roitium.nodal.data.Memo
 import com.roitium.nodal.data.NodalRepository
+import com.roitium.nodal.data.models.Memo
 import dagger.hilt.android.lifecycle.HiltViewModel
 import jakarta.inject.Inject
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+
+sealed interface MemoDetailUiState {
+    data object Loading : MemoDetailUiState
+    data class Success(val memo: Memo) : MemoDetailUiState
+    data class Error(val message: String) : MemoDetailUiState
+}
 
 @HiltViewModel
 class MemoDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
-    var memo by mutableStateOf<Memo?>(null)
-        private set
-    var error by mutableStateOf<String?>(null)
-        private set
-    var isLoading by mutableStateOf(false)
-        private set
+    private val memoId: String? = savedStateHandle["memoId"]
 
-    val memoId: String? = savedStateHandle["memoId"]
-
-    init {
-        loadMemoDetail()
-    }
-
-    fun loadMemoDetail() {
-        isLoading = true
+    val uiState: StateFlow<MemoDetailUiState> = flow {
         if (memoId == null) {
-            error = "memoId 为空"
-            isLoading = false
+            emit(MemoDetailUiState.Error("Memo ID 为空"))
         } else {
-            viewModelScope.launch {
-                try {
-                    memo = NodalRepository.getMemoDetail(memoId)
-                } catch (e: Exception) {
-                    error = e.message
-                } finally {
-                    isLoading = false
-                }
-            }
+            emitAll(
+                NodalRepository.getMemoDetail(memoId)
+                    .map { memo -> MemoDetailUiState.Success(memo) }
+                    .catch { e -> emit(MemoDetailUiState.Error(e.message ?: "加载失败")) }
+            )
         }
-    }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = MemoDetailUiState.Loading
+    )
 
-    fun deleteMemo() {
-        if (memoId == null) {
-            error = "memoId 为空"
-        } else {
-            viewModelScope.launch {
-                withContext(NonCancellable) {
-                    try {
-                        NodalRepository.deleteMemo(memoId)
-                        SnackbarManager.showMessage("删除成功")
-                    } catch (e: Exception) {
-                        SnackbarManager.showMessage(e.message ?: "删除失败")
-                    }
+    fun deleteMemo(onDeleteSuccess: () -> Unit) {
+        if (memoId == null) return
+
+        viewModelScope.launch {
+            withContext(NonCancellable) {
+                try {
+                    NodalRepository.deleteMemo(memoId)
+                    SnackbarManager.showMessage("删除成功")
+                    onDeleteSuccess()
+                } catch (e: Exception) {
+                    SnackbarManager.showMessage(e.message ?: "删除失败")
                 }
             }
         }

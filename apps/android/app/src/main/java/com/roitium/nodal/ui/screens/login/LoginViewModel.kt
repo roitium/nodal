@@ -5,8 +5,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.roitium.nodal.data.LoginRequest
 import com.roitium.nodal.data.NodalRepository
+import com.roitium.nodal.data.models.LoginRequest
 import kotlinx.coroutines.launch
 
 class LoginViewModel : ViewModel() {

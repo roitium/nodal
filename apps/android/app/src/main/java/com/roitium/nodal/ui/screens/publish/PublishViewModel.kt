@@ -7,9 +7,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.roitium.nodal.data.Memo
 import com.roitium.nodal.data.NodalRepository
-import com.roitium.nodal.data.Resource
+import com.roitium.nodal.data.models.Memo
+import com.roitium.nodal.data.models.Resource
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch

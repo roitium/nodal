@@ -8,7 +8,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -19,9 +18,11 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.roitium.nodal.ui.components.MemoCard
 
@@ -34,6 +35,7 @@ fun MemoDetailScreen(
     onClickReferredMemo: (id: String) -> Unit
 ) {
     val scrollState = rememberScrollState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -52,41 +54,47 @@ fun MemoDetailScreen(
                 .padding(paddingValues)
                 .fillMaxSize()
         ) {
-            if (viewModel.isLoading && viewModel.memo == null) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-            } else if (viewModel.error != null && viewModel.memo == null) {
-                Column(
-                    modifier = Modifier.align(Alignment.Center),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(text = viewModel.error!!, color = MaterialTheme.colorScheme.error)
-                    Button(onClick = {
-                        viewModel.loadMemoDetail()
-                    }) {
-                        Text("重试")
+            when (uiState) {
+                is MemoDetailUiState.Loading -> {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                }
+
+                is MemoDetailUiState.Error -> {
+                    Column(
+                        modifier = Modifier.align(Alignment.Center),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = (uiState as MemoDetailUiState.Error).message,
+                            color = MaterialTheme.colorScheme.error
+                        )
                     }
                 }
-            } else if (viewModel.memo != null) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(scrollState)
-                        .padding(horizontal = 8.dp)
-                ) {
-                    MemoCard(
-                        memo = viewModel.memo!!,
-                        onClickImage = onClickImage,
-                        onDelete = {
-                            viewModel.deleteMemo()
-                            onNavigateBack()
-                        },
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                        onClickMemo = null,
-                        onClickReferredMemo = onClickReferredMemo
-                    )
+
+                is MemoDetailUiState.Success -> {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(scrollState)
+                            .padding(horizontal = 8.dp)
+                    ) {
+                        MemoCard(
+                            memo = (uiState as MemoDetailUiState.Success).memo,
+                            onClickImage = onClickImage,
+                            onDelete = {
+                                viewModel.deleteMemo({
+                                    onNavigateBack()
+                                })
+                            },
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                            onClickMemo = null,
+                            onClickReferredMemo = onClickReferredMemo
+                        )
+                    }
                 }
             }
+
         }
     }
 }

@@ -1,10 +1,10 @@
 package com.roitium.nodal.data.api
 
-import com.roitium.nodal.data.Memo
-import com.roitium.nodal.data.PatchMemoRequest
-import com.roitium.nodal.data.PublishRequest
-import com.roitium.nodal.data.Response
-import com.roitium.nodal.data.TimelineResponse
+import com.roitium.nodal.data.models.Memo
+import com.roitium.nodal.data.models.PatchMemoRequest
+import com.roitium.nodal.data.models.PublishRequest
+import com.roitium.nodal.data.models.Response
+import com.roitium.nodal.data.models.TimelineResponse
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET

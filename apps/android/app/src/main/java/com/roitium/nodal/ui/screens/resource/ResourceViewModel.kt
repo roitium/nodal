@@ -7,7 +7,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.roitium.nodal.data.NodalRepository
-import com.roitium.nodal.data.Resource
+import com.roitium.nodal.data.models.Resource
 import kotlinx.coroutines.launch
 
 class ResourceViewModel : ViewModel() {

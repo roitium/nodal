@@ -1,21 +1,36 @@
 package com.roitium.nodal.ui.screens.timeline
 
 import SnackbarManager
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.roitium.nodal.data.AuthState
-import com.roitium.nodal.data.Cursor
-import com.roitium.nodal.data.Memo
 import com.roitium.nodal.data.NodalRepository
+import com.roitium.nodal.data.models.Cursor
+import com.roitium.nodal.data.models.Memo
 import dagger.hilt.android.lifecycle.HiltViewModel
 import jakarta.inject.Inject
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+
+data class TimelineUiState(
+    val memos: List<Memo> = emptyList(),
+    val isLoading: Boolean = false,
+    val error: String? = null,
+    val currentUsername: String? = null,
+    val title: String = ""
+)
 
 @HiltViewModel
 class TimelineViewModel @Inject constructor(
@@ -25,95 +40,119 @@ class TimelineViewModel @Inject constructor(
     private val timelineType: String? = savedStateHandle["type"]
     private val targetUsername: String? = savedStateHandle["username"]
 
-    private var _memos = mutableStateListOf<Memo>()
-
-    val memos: List<Memo> get() = _memos
-
-    var isLoading by mutableStateOf(false)
-        private set
-
-    var error by mutableStateOf<String?>(null)
-        private set
-
+    // 分页游标 (保持在 VM 内部)
     var nextCursor: Cursor? = null
 
-    var currentUsername: String? = targetUsername
-    var appBarTitle =
-        if (timelineType == "global") "Explore" else if (targetUsername != null) "@$targetUsername" else "Your Memos"
+    // 标记是否还有更多数据
+    private var hasMoreData = true
 
-    init {
+    // 内部 Loading 和 Error 状态流
+    private val _isLoading = MutableStateFlow(false)
+    private val _error = MutableStateFlow<String?>(null)
+
+    private fun getTitle(type: String?, target: String?, actual: String?): String {
+        return if (type == "global") "Explore"
+        else if (target != null) "@$target"
+        else if (actual != null) "@$actual"
+        else "Your Memos"
+    }
+
+    private val targetUserFlow: Flow<String?> = flow {
         if (timelineType == "global") {
-            internalLoadMemos(isRefresh = true, null)
+            emit(null)
+        } else if (targetUsername != null) {
+            emit(targetUsername)
         } else {
-            observeAuthState()
+            NodalRepository.authState
+                .filterIsInstance<AuthState.Authenticated>()
+                .map { it.user.username }
+                .collect { emit(it) }
         }
     }
 
-    private fun observeAuthState() {
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val uiState: StateFlow<TimelineUiState> = targetUserFlow
+        .flatMapLatest { username ->
+            NodalRepository.getTimelineFlow(username).map { memos ->
+                username to memos
+            }
+        }
+        .combine(_isLoading) { (username, memos), loading ->
+            TimelineUiState(
+                memos = memos,
+                isLoading = loading,
+                currentUsername = username,
+                title = getTitle(timelineType, targetUsername, username)
+            )
+        }
+        .combine(_error) { state, error ->
+            state.copy(error = error)
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = TimelineUiState(isLoading = true)
+        )
+
+    init {
         viewModelScope.launch {
-            NodalRepository.authState.collectLatest { authState ->
-                if (authState is AuthState.Authenticated) {
-                    val userToLoad = targetUsername ?: authState.user.username
-                    currentUsername = userToLoad
-                    internalLoadMemos(isRefresh = true, username = userToLoad)
-                } else {
-                    _memos.clear()
-                }
+            targetUserFlow.collectLatest { user ->
+                // 只有当是刷新操作，或者列表为空时才去拉取
+                internalLoadMemos(isRefresh = true, username = user)
             }
         }
     }
 
-    fun loadMemos(isRefresh: Boolean = false) {
-        if (timelineType == "global") {
-            internalLoadMemos(isRefresh = isRefresh, null)
-        } else {
-            internalLoadMemos(isRefresh, currentUsername)
-        }
+    fun loadMore() {
+        val currentUser = uiState.value.currentUsername
+        if (timelineType != "global" && currentUser == null) return
+
+        internalLoadMemos(isRefresh = false, username = currentUser)
     }
 
-    private fun internalLoadMemos(isRefresh: Boolean = false, username: String?) {
-        if (isLoading) return
+    fun refresh() {
+        val currentUser = uiState.value.currentUsername
+        internalLoadMemos(isRefresh = true, username = currentUser)
+    }
+
+    private fun internalLoadMemos(isRefresh: Boolean, username: String?) {
+        if (_isLoading.value) return
+        if (!isRefresh && !hasMoreData) return
 
         viewModelScope.launch {
-            isLoading = true
-            error = null
+            _isLoading.value = true
+            _error.value = null
+
             try {
                 val cursorToUse = if (isRefresh) null else nextCursor
 
-                // 校验逻辑
-                if (!isRefresh && memos.isNotEmpty() && cursorToUse == null) return@launch
-
-                val response = NodalRepository.getTimeline(
+                val response = NodalRepository.fetchTimeline(
                     cursorCreatedAt = cursorToUse?.createdAt,
                     cursorId = cursorToUse?.id,
                     username = username
                 )
 
-                if (isRefresh) {
-                    _memos.clear()
+                if (response.data.isEmpty()) {
+                    hasMoreData = false
+                } else {
+                    nextCursor = response.nextCursor
+                    hasMoreData = response.nextCursor != null
                 }
-                _memos.addAll(response.data)
-                nextCursor = response.nextCursor
             } catch (e: Exception) {
-                error = e.message ?: "拉取时间线失败"
+                _error.value = e.message ?: "加载失败"
             } finally {
-                isLoading = false
+                _isLoading.value = false
             }
         }
     }
 
     fun deleteMemo(id: String) {
-        val memoToDelete = _memos.find { it.id == id } ?: return
-        val originalIndex = _memos.indexOf(memoToDelete)
-
         viewModelScope.launch {
-            _memos.remove(memoToDelete)
             try {
                 NodalRepository.deleteMemo(id)
                 SnackbarManager.showMessage("删除成功")
             } catch (e: Exception) {
                 SnackbarManager.showMessage(e.message ?: "删除失败")
-                _memos.add(originalIndex, memoToDelete)
             }
         }
     }

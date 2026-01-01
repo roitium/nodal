@@ -39,8 +39,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.roitium.nodal.data.Memo
 import com.roitium.nodal.data.NodalRepository
+import com.roitium.nodal.data.models.Memo
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)

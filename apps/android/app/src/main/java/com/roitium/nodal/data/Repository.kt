@@ -8,13 +8,29 @@ import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFact
 import com.roitium.nodal.data.api.NodalAuthApi
 import com.roitium.nodal.data.api.NodalMemoApi
 import com.roitium.nodal.data.api.NodalResourceApi
+import com.roitium.nodal.data.models.ApiResult
+import com.roitium.nodal.data.models.AuthResponse
+import com.roitium.nodal.data.models.LoginRequest
+import com.roitium.nodal.data.models.Memo
+import com.roitium.nodal.data.models.PatchMemoRequest
+import com.roitium.nodal.data.models.PublishRequest
+import com.roitium.nodal.data.models.RecordUploadRequest
+import com.roitium.nodal.data.models.RegisterRequest
+import com.roitium.nodal.data.models.Resource
+import com.roitium.nodal.data.models.TimelineResponse
+import com.roitium.nodal.data.models.User
 import com.roitium.nodal.exceptions.BusinessException
 import com.roitium.nodal.utils.AuthTokenManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import okhttp3.Interceptor
@@ -24,6 +40,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import java.util.concurrent.TimeUnit
+import kotlin.time.Instant
 
 sealed class AuthState {
     object Initializing : AuthState()
@@ -55,7 +72,6 @@ object NodalRepository {
             }
         }
     }
-
 
     private val json = Json {
         ignoreUnknownKeys = true
@@ -98,6 +114,20 @@ object NodalRepository {
     private val resourceApi: NodalResourceApi = retrofitClient.create(NodalResourceApi::class.java)
     private val authApi: NodalAuthApi = retrofitClient.create(NodalAuthApi::class.java)
 
+    private val _memoEntities = MutableStateFlow<Map<String, Memo>>(emptyMap())
+
+    // 储存每个用户名对应时间线的索引
+    private val _personalTimeline = MutableStateFlow<Map<String, List<String>>>(emptyMap())
+
+    // 储存 explore 页面的时间线索引
+    private val _exploreTimeline = MutableStateFlow<List<String>>(emptyList())
+
+    private fun updateEntities(memos: List<Memo>) {
+        _memoEntities.update { current ->
+            current + memos.associateBy { it.id }
+        }
+    }
+
     suspend fun logout() {
         authTokenManager?.clearAuthInfo()
     }
@@ -130,21 +160,53 @@ object NodalRepository {
         }
     }
 
-    suspend fun getTimeline(
-        limit: Int? = 20,
-        cursorCreatedAt: Long? = null,
-        cursorId: String? = null,
-        username: String? = null
-    ): TimelineResponse {
-        val response = memoApi.getTimeline(limit, cursorCreatedAt, cursorId, username)
-        when (val result = response.toApiResult()) {
-            is ApiResult.Failure -> {
-                throw BusinessException(result.code, result.errorMessage, result.traceId)
+    fun getTimelineFlow(username: String?): Flow<List<Memo>> {
+        if (username == null) {
+            return _exploreTimeline.combine(_memoEntities) { ids, entities ->
+                ids.mapNotNull { entities[it] }
             }
+        }
+        return _personalTimeline.map { it[username] ?: emptyList() }
+            .combine(_memoEntities) { ids, entities ->
+                ids.mapNotNull { entities[it] }
+            }
+    }
 
+    suspend fun fetchTimeline(
+        username: String? = null, cursorCreatedAt: Long? = null,
+        cursorId: String? = null,
+    ): TimelineResponse {
+        val response = memoApi.getTimeline(
+            limit = 20,
+            username = username,
+            cursorId = cursorId,
+            cursorCreatedAt = cursorCreatedAt
+        )
+        when (val result = response.toApiResult()) {
             is ApiResult.Success -> {
+                val newList = result.data.data
+                updateEntities(newList)
+                if (username == null) {
+                    _exploreTimeline.update { currentList ->
+                        val oldIds = if (cursorId == null) emptyList() else currentList
+                        (oldIds + newList.map { it.id }).distinct()
+                    }
+                } else {
+                    _personalTimeline.update { currentMap ->
+                        val oldIds = if (cursorId == null) emptyList() else currentMap[username]
+                            ?: emptyList()
+                        val combinedIds = (oldIds + newList.map { it.id }).distinct()
+                        currentMap + (username to combinedIds)
+                    }
+                }
                 return result.data
             }
+
+            is ApiResult.Failure -> throw BusinessException(
+                result.code,
+                result.errorMessage,
+                result.traceId
+            )
         }
     }
 
@@ -168,6 +230,19 @@ object NodalRepository {
             }
 
             is ApiResult.Success -> {
+                // 乐观更新，同时把新创建的 memo 插入到最顶端
+                if (result.data.author?.username != null) {
+                    _personalTimeline.update { currentMap ->
+                        val newList =
+                            listOf(result.data.id) + (currentMap[result.data.author.username]
+                                ?: emptyList())
+                        currentMap + (result.data.author.username to newList)
+                    }
+                    _exploreTimeline.update { currentList ->
+                        listOf(result.data.id) + currentList
+                    }
+                }
+                updateEntities(listOf(result.data))
                 return result.data
             }
         }
@@ -240,6 +315,12 @@ object NodalRepository {
             }
 
             is ApiResult.Success -> {
+                _memoEntities.update { it - id }
+                _personalTimeline.update { map ->
+                    map.mapValues { (_, ids) -> ids.filter { it != id } }
+                }
+                _exploreTimeline.update { list -> list.filter { it != id } }
+
                 return true
             }
         }
@@ -249,17 +330,50 @@ object NodalRepository {
         id: String,
         content: String?,
         visibility: String?,
-        resources: List<String>?,
-        createdAt: Long?,
+        resources: List<Resource>?,
+        createdAt: String?,
         isPinned: Boolean?,
-        quoteId: String?
+        quoteMemo: Memo?
     ): Boolean {
+        val oldMemo = _memoEntities.value[id]
+        _memoEntities.update { currentMap ->
+            val oldMemo = currentMap[id] ?: return@update currentMap
+
+            val updatedMemo = oldMemo.copy(
+                content = content ?: oldMemo.content,
+                visibility = visibility ?: oldMemo.visibility,
+                resources = resources ?: oldMemo.resources,
+                createdAt = createdAt ?: oldMemo.createdAt,
+                isPinned = isPinned ?: oldMemo.isPinned,
+                quotedMemo = quoteMemo ?: oldMemo.quotedMemo
+            )
+
+            currentMap + (id to updatedMemo)
+        }
+        var createdAtTimestamp: Long? = null
+        if (createdAt != null) {
+            val instant = Instant.parse(createdAt)
+            val epochMillis = instant.toEpochMilliseconds()
+            createdAtTimestamp = epochMillis
+        }
         val response = memoApi.patchMemo(
             id,
-            PatchMemoRequest(content, visibility, quoteId, resources, createdAt, isPinned)
+            PatchMemoRequest(
+                content,
+                visibility,
+                quoteMemo?.id,
+                resources?.map { it.id },
+                createdAtTimestamp,
+                isPinned
+            )
         )
         when (val result = response.toApiResult()) {
             is ApiResult.Failure -> {
+                if (oldMemo != null) {
+                    _memoEntities.update { currentMap ->
+                        currentMap + (id to oldMemo)
+                    }
+                }
                 throw BusinessException(result.code, result.errorMessage, result.traceId)
             }
 
@@ -282,7 +396,11 @@ object NodalRepository {
         }
     }
 
-    suspend fun getMemoDetail(id: String): Memo {
+    fun getMemoDetail(id: String): Flow<Memo> = flow {
+        val inMemoryMemo = _memoEntities.value[id]
+        if (inMemoryMemo != null) {
+            emit(inMemoryMemo)
+        }
         val response = memoApi.getMemoDetail(id)
         when (val result = response.toApiResult()) {
             is ApiResult.Failure -> {
@@ -290,7 +408,8 @@ object NodalRepository {
             }
 
             is ApiResult.Success -> {
-                return result.data
+                emit(result.data)
+                updateEntities(listOf(result.data))
             }
         }
     }

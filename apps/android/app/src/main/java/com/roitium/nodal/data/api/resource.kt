@@ -1,9 +1,9 @@
 package com.roitium.nodal.data.api
 
-import com.roitium.nodal.data.RecordUploadRequest
-import com.roitium.nodal.data.Resource
-import com.roitium.nodal.data.Response
-import com.roitium.nodal.data.UploadUrlResponse
+import com.roitium.nodal.data.models.RecordUploadRequest
+import com.roitium.nodal.data.models.Resource
+import com.roitium.nodal.data.models.Response
+import com.roitium.nodal.data.models.UploadUrlResponse
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
