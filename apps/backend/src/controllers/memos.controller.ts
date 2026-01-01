@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/prefer-nullish-coalescing */
 import { memos, resources, users } from '@/db/schema'
 import { authPlugin } from '@/plugins/auth'
 import { dbPlugin } from '@/plugins/db'
@@ -11,6 +12,7 @@ import {
 	v7 as uuidv7,
 	validate as uuidValidate,
 	version as uuidVersion,
+	v7,
 } from 'uuid'
 
 export const memosController = new Elysia({ prefix: '/memos', tags: ['memos'] })
@@ -18,7 +20,16 @@ export const memosController = new Elysia({ prefix: '/memos', tags: ['memos'] })
 	.use(subdomainPlugin)
 	.use(dbPlugin)
 	.use(traceIdPlugin)
-
+	.onError(({ error, set, traceId }) => {
+		traceId ??= v7()
+		console.error(`traceId: ${traceId}`, error)
+		set.status = 500
+		return fail({
+			message: '服务器内部错误',
+			traceId,
+			code: GeneralCode.InternalError,
+		})
+	})
 	/**
 	 * 获取 memos 列表
 	 * 1. 支持通过 子域名/username=xxx 查询某个用户的公开笔记。如果用户已登录，则为该用户所有笔记
@@ -451,12 +462,14 @@ export const memosController = new Elysia({ prefix: '/memos', tags: ['memos'] })
 					}),
 				)
 
+			console.log(body)
+
 			const {
 				isPinned,
 				visibility,
 				content,
 				resources: resourcesIds,
-				qouteId,
+				quoteId,
 				createdAt,
 			} = body
 
@@ -464,10 +477,10 @@ export const memosController = new Elysia({ prefix: '/memos', tags: ['memos'] })
 				await tx
 					.update(memos)
 					.set({
-						isPinned: isPinned ?? memo.isPinned,
-						visibility: visibility ?? memo.visibility,
-						content: content ?? memo.content,
-						quoteId: qouteId ?? memo.quoteId,
+						isPinned: isPinned !== undefined ? isPinned : memo.isPinned,
+						visibility: visibility !== undefined ? visibility : memo.visibility,
+						content: content !== undefined ? content : memo.content,
+						quoteId: quoteId !== undefined ? quoteId : memo.quoteId,
 						createdAt: createdAt ? new Date(createdAt) : memo.createdAt,
 					})
 					.where(eq(memos.id, id))
@@ -476,7 +489,7 @@ export const memosController = new Elysia({ prefix: '/memos', tags: ['memos'] })
 				if (resourcesIds === undefined) {
 					return
 				}
-				if (memo.resources) {
+				if (memo.resources && resourcesIds.length > 0) {
 					await tx
 						.update(resources)
 						.set({ memoId: null })
@@ -513,7 +526,7 @@ export const memosController = new Elysia({ prefix: '/memos', tags: ['memos'] })
 				),
 				content: t.Optional(t.String()),
 				resources: t.Optional(t.Array(t.String({ format: 'uuid' }))),
-				qouteId: t.Optional(t.String({ format: 'uuid' })),
+				quoteId: t.Optional(t.Nullable(t.String({ format: 'uuid' }))),
 				createdAt: t.Optional(t.Number()),
 			}),
 		},

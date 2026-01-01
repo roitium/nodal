@@ -1,5 +1,7 @@
 package com.roitium.nodal.ui.screens.timeline
 
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -48,7 +50,9 @@ fun TimelineScreen(
     onNavigateToPublish: (memoId: String?, replyToMemoId: String?) -> Unit,
     onOpenDrawer: () -> Unit,
     onClickImage: (url: String?) -> Unit,
-    onNavigateToMemoDetail: (memoId: String) -> Unit
+    onNavigateToMemoDetail: (memoId: String) -> Unit,
+    animatedVisibilityScope: AnimatedVisibilityScope,
+    sharedTransitionScope: SharedTransitionScope,
 ) {
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
@@ -59,7 +63,7 @@ fun TimelineScreen(
             val totalItems = listState.layoutInfo.totalItemsCount
             val lastVisibleItemIndex =
                 listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
-            totalItems > 0 && lastVisibleItemIndex >= totalItems - 3 && viewModel.nextCursor != null
+            totalItems > 0 && lastVisibleItemIndex >= totalItems - 3 && viewModel.hasMoreData
         }
     }
 
@@ -138,7 +142,9 @@ fun TimelineScreen(
                                 onClickReferredMemo = onNavigateToMemoDetail,
                                 onClickEdit = { id ->
                                     onNavigateToPublish(id, null)
-                                }
+                                },
+                                animatedVisibilityScope = animatedVisibilityScope,
+                                sharedTransitionScope = sharedTransitionScope
                             )
                         }
                         if (uiState.isLoading && uiState.memos.isNotEmpty()) {
@@ -153,7 +159,7 @@ fun TimelineScreen(
                                 }
                             }
                         }
-                        if (uiState.memos.isNotEmpty() && !uiState.isLoading && viewModel.nextCursor == null) {
+                        if (uiState.memos.isNotEmpty() && !uiState.isLoading && !viewModel.hasMoreData) {
                             item {
                                 Box(
                                     modifier = Modifier

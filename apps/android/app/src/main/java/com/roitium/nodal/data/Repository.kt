@@ -3,6 +3,7 @@ package com.roitium.nodal.data
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
+import android.util.Log
 import android.webkit.MimeTypeMap
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import com.roitium.nodal.data.api.NodalAuthApi
@@ -10,9 +11,10 @@ import com.roitium.nodal.data.api.NodalMemoApi
 import com.roitium.nodal.data.api.NodalResourceApi
 import com.roitium.nodal.data.models.ApiResult
 import com.roitium.nodal.data.models.AuthResponse
+import com.roitium.nodal.data.models.Cursor
 import com.roitium.nodal.data.models.LoginRequest
 import com.roitium.nodal.data.models.Memo
-import com.roitium.nodal.data.models.PatchMemoRequest
+import com.roitium.nodal.data.models.PatchQuoteMemoField
 import com.roitium.nodal.data.models.PublishRequest
 import com.roitium.nodal.data.models.RecordUploadRequest
 import com.roitium.nodal.data.models.RegisterRequest
@@ -33,6 +35,10 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.add
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonArray
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -122,6 +128,10 @@ object NodalRepository {
     // 储存 explore 页面的时间线索引
     private val _exploreTimeline = MutableStateFlow<List<String>>(emptyList())
 
+    // 我觉得 cursor 应该是属于 ViewModel 层的，但是放在 ViewModel 层的话，每次切换 cursor 都会丢失，数据也要重新 refresh，用户体验不好。
+    var exploreTimelineCursor: Cursor? = null
+    var personalTimelineCursor: MutableMap<String, Cursor?> = mutableMapOf()
+
     private fun updateEntities(memos: List<Memo>) {
         _memoEntities.update { current ->
             current + memos.associateBy { it.id }
@@ -173,14 +183,22 @@ object NodalRepository {
     }
 
     suspend fun fetchTimeline(
-        username: String? = null, cursorCreatedAt: Long? = null,
-        cursorId: String? = null,
+        username: String? = null,
+        isRefresh: Boolean // 是否是刷新。如果是刷新的话，会获取最新的数据，然后删除过去所有的（目前实现有点过于简单了）
     ): TimelineResponse {
+        var cursor: Cursor? = null
+        if (!isRefresh) {
+            cursor = if (username == null) {
+                exploreTimelineCursor
+            } else {
+                personalTimelineCursor[username]
+            }
+        }
         val response = memoApi.getTimeline(
             limit = 20,
             username = username,
-            cursorId = cursorId,
-            cursorCreatedAt = cursorCreatedAt
+            cursorId = cursor?.id,
+            cursorCreatedAt = cursor?.createdAt
         )
         when (val result = response.toApiResult()) {
             is ApiResult.Success -> {
@@ -188,16 +206,21 @@ object NodalRepository {
                 updateEntities(newList)
                 if (username == null) {
                     _exploreTimeline.update { currentList ->
-                        val oldIds = if (cursorId == null) emptyList() else currentList
+                        val oldIds = if (cursor == null) emptyList() else currentList
                         (oldIds + newList.map { it.id }).distinct()
                     }
                 } else {
                     _personalTimeline.update { currentMap ->
-                        val oldIds = if (cursorId == null) emptyList() else currentMap[username]
+                        val oldIds = if (cursor == null) emptyList() else currentMap[username]
                             ?: emptyList()
                         val combinedIds = (oldIds + newList.map { it.id }).distinct()
                         currentMap + (username to combinedIds)
                     }
+                }
+                if (username == null) {
+                    exploreTimelineCursor = result.data.nextCursor
+                } else {
+                    personalTimelineCursor[username] = result.data.nextCursor
                 }
                 return result.data
             }
@@ -333,9 +356,11 @@ object NodalRepository {
         resources: List<Resource>?,
         createdAt: String?,
         isPinned: Boolean?,
-        quoteMemo: Memo?
+        quoteMemo: PatchQuoteMemoField
     ): Boolean {
         val oldMemo = _memoEntities.value[id]
+        val finalQuotedMemo =
+            if (quoteMemo is PatchQuoteMemoField.Exist) quoteMemo.memo else if (quoteMemo is PatchQuoteMemoField.Empty) null else oldMemo
         _memoEntities.update { currentMap ->
             val oldMemo = currentMap[id] ?: return@update currentMap
 
@@ -345,7 +370,7 @@ object NodalRepository {
                 resources = resources ?: oldMemo.resources,
                 createdAt = createdAt ?: oldMemo.createdAt,
                 isPinned = isPinned ?: oldMemo.isPinned,
-                quotedMemo = quoteMemo ?: oldMemo.quotedMemo
+                quotedMemo = finalQuotedMemo
             )
 
             currentMap + (id to updatedMemo)
@@ -356,16 +381,22 @@ object NodalRepository {
             val epochMillis = instant.toEpochMilliseconds()
             createdAtTimestamp = epochMillis
         }
+        val patchBody = buildJsonObject {
+            put("quoteId", finalQuotedMemo?.id)
+            isPinned?.let { put("isPinned", it) }
+            createdAtTimestamp?.let { put("createdAt", it) }
+            visibility?.let { put("visibility", it) }
+            resources?.let { list ->
+                putJsonArray("resources") {
+                    list.forEach { add(it.id) }
+                }
+            }
+            content?.let { put("content", it) }
+        }
+        Log.d("PatchMemo", patchBody.toString())
         val response = memoApi.patchMemo(
             id,
-            PatchMemoRequest(
-                content,
-                visibility,
-                quoteMemo?.id,
-                resources?.map { it.id },
-                createdAtTimestamp,
-                isPinned
-            )
+            patchBody
         )
         when (val result = response.toApiResult()) {
             is ApiResult.Failure -> {

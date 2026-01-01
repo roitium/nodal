@@ -7,7 +7,7 @@ import { fail, success } from '@/utils/response'
 import { jwt } from '@elysiajs/jwt'
 import { eq, or } from 'drizzle-orm'
 import { Elysia, t } from 'elysia'
-import { v7 as uuidv7 } from 'uuid'
+import { v7 as uuidv7, v7 } from 'uuid'
 
 export const authController = new Elysia({ prefix: '/auth', tags: ['auth'] })
 	.use(dbPlugin)
@@ -19,7 +19,16 @@ export const authController = new Elysia({ prefix: '/auth', tags: ['auth'] })
 		}),
 	)
 	.use(traceIdPlugin)
-
+	.onError(({ error, set, traceId }) => {
+		traceId ??= v7()
+		console.error(`traceId: ${traceId}`, error)
+		set.status = 500
+		return fail({
+			message: '服务器内部错误',
+			traceId,
+			code: GeneralCode.InternalError,
+		})
+	})
 	.post(
 		'/register',
 		async ({ body, status, jwt, db, traceId }) => {

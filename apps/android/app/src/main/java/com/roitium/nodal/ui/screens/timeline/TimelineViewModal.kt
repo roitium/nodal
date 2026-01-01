@@ -1,12 +1,14 @@
 package com.roitium.nodal.ui.screens.timeline
 
 import SnackbarManager
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.roitium.nodal.data.AuthState
 import com.roitium.nodal.data.NodalRepository
-import com.roitium.nodal.data.models.Cursor
 import com.roitium.nodal.data.models.Memo
 import com.roitium.nodal.ui.navigation.NodalDestinations
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -41,11 +43,9 @@ class TimelineViewModel @Inject constructor(
     private val timelineType: String? = savedStateHandle[NodalDestinations.Args.TYPE]
     private val targetUsername: String? = savedStateHandle[NodalDestinations.Args.USERNAME]
 
-    // 分页游标 (保持在 VM 内部)
-    var nextCursor: Cursor? = null
-
     // 标记是否还有更多数据
-    private var hasMoreData = true
+    var hasMoreData by mutableStateOf(true)
+        private set
 
     // 内部 Loading 和 Error 状态流
     private val _isLoading = MutableStateFlow(false)
@@ -98,8 +98,12 @@ class TimelineViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             targetUserFlow.collectLatest { user ->
-                // 只有当是刷新操作，或者列表为空时才去拉取
-                internalLoadMemos(isRefresh = true, username = user)
+                // 只在没数据（首次打开）时才主动刷新
+                if (user == null && NodalRepository.exploreTimelineCursor == null) {
+                    internalLoadMemos(isRefresh = true, username = user)
+                } else if (user != null && NodalRepository.personalTimelineCursor[user] == null) {
+                    internalLoadMemos(isRefresh = true, username = user)
+                }
             }
         }
     }
@@ -125,18 +129,14 @@ class TimelineViewModel @Inject constructor(
             _error.value = null
 
             try {
-                val cursorToUse = if (isRefresh) null else nextCursor
-
                 val response = NodalRepository.fetchTimeline(
-                    cursorCreatedAt = cursorToUse?.createdAt,
-                    cursorId = cursorToUse?.id,
-                    username = username
+                    username = username,
+                    isRefresh = isRefresh
                 )
 
                 if (response.data.isEmpty()) {
                     hasMoreData = false
                 } else {
-                    nextCursor = response.nextCursor
                     hasMoreData = response.nextCursor != null
                 }
             } catch (e: Exception) {

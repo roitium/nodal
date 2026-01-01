@@ -5,7 +5,11 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.MaterialTheme
@@ -217,7 +221,9 @@ fun NodalApp() {
                                     val destination =
                                         NodalDestinations.buildMemoDetailRoute(it)
                                     navController.navigate(destination)
-                                }
+                                },
+                                animatedVisibilityScope = this,
+                                sharedTransitionScope = this@SharedTransitionLayout,
                             )
                         }
                         composable(NodalDestinations.PUBLISH_ROUTE) {
@@ -235,7 +241,9 @@ fun NodalApp() {
 
                             FullScreenImageViewer(
                                 imageUrl = url,
-                                onDismiss = { navController.popBackStack() }
+                                onDismiss = { navController.popBackStack() },
+                                animatedVisibilityScope = this,
+                                sharedTransitionScope = this@SharedTransitionLayout,
                             )
                         }
                         composable(
@@ -261,7 +269,33 @@ fun NodalApp() {
                             route = NodalDestinations.MEMO_DETAIL_ROUTE,
                             arguments = listOf(navArgument(NodalDestinations.Args.MEMO_ID) {
                                 type = NavType.StringType
-                            })
+                            }),
+                            exitTransition = {
+                                if (targetState.destination.route?.startsWith("image_viewer") == true) {
+                                    fadeOut(animationSpec = tween(300))
+                                } else {
+                                    slideOutOfContainer(
+                                        AnimatedContentTransitionScope.SlideDirection.Right,
+                                        animationSpec = tween(500)
+                                    )
+                                }
+                            },
+                            enterTransition = {
+                                slideIntoContainer(
+                                    AnimatedContentTransitionScope.SlideDirection.Left,
+                                    animationSpec = tween(500)
+                                )
+                            },
+                            popEnterTransition = {
+                                if (initialState.destination.route?.startsWith("image_viewer") == true) {
+                                    fadeIn(animationSpec = tween(300))
+                                } else {
+                                    slideIntoContainer(
+                                        AnimatedContentTransitionScope.SlideDirection.Left,
+                                        animationSpec = tween(500)
+                                    )
+                                }
+                            }
                         ) {
                             MemoDetailScreen(
                                 onClickImage = { url ->
@@ -282,7 +316,9 @@ fun NodalApp() {
                                             memoId
                                         )
                                     )
-                                }
+                                },
+                                animatedVisibilityScope = this,
+                                sharedTransitionScope = this@SharedTransitionLayout,
                             )
                         }
                     }

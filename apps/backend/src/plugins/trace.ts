@@ -1,4 +1,8 @@
 import Elysia from 'elysia'
-import { v7 as uuidv7 } from 'uuid'
+import { v7 } from 'uuid'
 
-export const traceIdPlugin = new Elysia().decorate('traceId', uuidv7())
+export const traceIdPlugin = new Elysia().derive({ as: 'scoped' }, () => {
+	return {
+		traceId: v7(),
+	}
+})

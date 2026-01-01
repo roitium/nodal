@@ -90,6 +90,7 @@ fun PublishScreen(
 
                 is PublishUiEvent.PublishSuccess -> {
                     SnackbarManager.showMessage(event.msg)
+                    onNavigateBack()
                 }
 
                 is PublishUiEvent.UploadError -> {
@@ -97,6 +98,11 @@ fun PublishScreen(
                 }
 
                 is PublishUiEvent.NavigateBack -> {
+                    onNavigateBack()
+                }
+
+                is PublishUiEvent.EditSuccess -> {
+                    SnackbarManager.showMessage(event.msg)
                     onNavigateBack()
                 }
             }

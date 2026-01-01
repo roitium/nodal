@@ -12,6 +12,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.roitium.nodal.data.NodalRepository
 import com.roitium.nodal.data.models.Memo
+import com.roitium.nodal.data.models.PatchQuoteMemoField
 import com.roitium.nodal.data.models.Resource
 import com.roitium.nodal.ui.navigation.NodalDestinations
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -37,22 +38,12 @@ sealed interface ResourceUnify {
     data class Local(val resource: ResourceUri) : ResourceUnify
 }
 
-sealed interface MemoDataUiState {
-    data object Loading : MemoDataUiState
-
-    /**
-     * 如果没提供 memoId，就说明是创建新的 memo，不需要提供详细原始数据
-     */
-    data object NoNeed : MemoDataUiState
-    data class Success(val memo: Memo) : MemoDataUiState
-    data class Error(val message: String) : MemoDataUiState
-}
-
 sealed interface PublishUiEvent {
     data class ShowMessage(val message: String) : PublishUiEvent
     data class PublishSuccess(val msg: String = "发布成功") : PublishUiEvent
     data class UploadError(val fileName: String, val error: String) : PublishUiEvent
     data object NavigateBack : PublishUiEvent
+    data class EditSuccess(val msg: String = "编辑成功") : PublishUiEvent
 }
 
 @HiltViewModel
@@ -69,7 +60,7 @@ class PublishViewModel @Inject constructor(
         private set
 
     // 刚进入页面时加载 memo 详情的状态
-    var isInitialLoading by mutableStateOf(true)
+    var isInitialLoading by mutableStateOf(false)
         private set
     var referredMemo by mutableStateOf<Memo?>(null)
         private set
@@ -78,11 +69,14 @@ class PublishViewModel @Inject constructor(
     val uiEvent = _uiEvent.receiveAsFlow()
 
     private val memoId: String? = savedStateHandle[NodalDestinations.Args.MEMO_ID]
+
+    // wtf is this???? memoId 如果为空，会是一个 "null" 字符串？？？
+    private val realMemoId = if (memoId == "null") null else memoId
     private val replyToMemoId: String? = savedStateHandle[NodalDestinations.Args.REPLY_TO_MEMO_ID]
 
     init {
-        if (memoId != null) {
-            loadMemoForEdit(memoId)
+        if (realMemoId != null) {
+            loadMemoForEdit(realMemoId)
         } else {
             isInitialLoading = false
         }
@@ -103,7 +97,6 @@ class PublishViewModel @Inject constructor(
                 }
                 resources.clear()
                 resources.addAll(existingResources)
-
             } catch (e: Exception) {
                 _uiEvent.send(PublishUiEvent.ShowMessage("加载原贴失败: ${e.message}"))
                 _uiEvent.send(PublishUiEvent.NavigateBack)
@@ -191,21 +184,48 @@ class PublishViewModel @Inject constructor(
         }
 
         val resourceIds = resources.mapNotNull { (it as? ResourceUnify.Remote)?.resource?.id }
+        val resourceObjects = resources.mapNotNull { (it as? ResourceUnify.Remote)?.resource }
 
-        viewModelScope.launch {
-            isPublishLoading = true
-            try {
-                NodalRepository.publish(
-                    content = content,
-                    visibility = if (isPrivate) "private" else "public",
-                    resources = resourceIds,
-                    referredMemoId = referredMemo?.id
-                )
-                _uiEvent.send(PublishUiEvent.PublishSuccess())
-            } catch (e: Exception) {
-                _uiEvent.send(PublishUiEvent.ShowMessage(e.message ?: "Unknown"))
-            } finally {
-                isPublishLoading = false
+        if (realMemoId != null) {
+            viewModelScope.launch {
+                isPublishLoading = true
+                try {
+                    val finalReferredMemo =
+                        if (referredMemo == null) PatchQuoteMemoField.Empty else PatchQuoteMemoField.Exist(
+                            referredMemo!!
+                        )
+                    NodalRepository.patchMemo(
+                        id = realMemoId,
+                        content = content,
+                        visibility = if (isPrivate) "private" else "public",
+                        resources = resourceObjects,
+                        quoteMemo = finalReferredMemo,
+                        createdAt = null,
+                        isPinned = null
+                    )
+                    _uiEvent.send(PublishUiEvent.EditSuccess())
+                } catch (e: Exception) {
+                    _uiEvent.send(PublishUiEvent.ShowMessage(e.message ?: "Unknown"))
+                } finally {
+                    isPublishLoading = false
+                }
+            }
+        } else {
+            viewModelScope.launch {
+                isPublishLoading = true
+                try {
+                    NodalRepository.publish(
+                        content = content,
+                        visibility = if (isPrivate) "private" else "public",
+                        resources = resourceIds,
+                        referredMemoId = referredMemo?.id
+                    )
+                    _uiEvent.send(PublishUiEvent.PublishSuccess())
+                } catch (e: Exception) {
+                    _uiEvent.send(PublishUiEvent.ShowMessage(e.message ?: "Unknown"))
+                } finally {
+                    isPublishLoading = false
+                }
             }
         }
     }

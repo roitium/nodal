@@ -7,7 +7,7 @@ import { GeneralCode, ResourceCode } from '@/utils/code'
 import { fail, success } from '@/utils/response'
 import { and, desc, eq } from 'drizzle-orm'
 import Elysia, { t } from 'elysia'
-import { v7 as uuidv7 } from 'uuid'
+import { v7 as uuidv7, v7 } from 'uuid'
 
 export const resourcesController = new Elysia({
 	prefix: '/resources',
@@ -16,6 +16,16 @@ export const resourcesController = new Elysia({
 	.use(dbPlugin)
 	.use(authPlugin)
 	.use(traceIdPlugin)
+	.onError(({ error, set, traceId }) => {
+		traceId ??= v7()
+		console.error(`traceId: ${traceId}`, error)
+		set.status = 500
+		return fail({
+			message: '服务器内部错误',
+			traceId,
+			code: GeneralCode.InternalError,
+		})
+	})
 	.get(
 		'/:id',
 		async ({ params: { id }, user, db, status, traceId }) => {

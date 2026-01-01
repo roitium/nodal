@@ -1,5 +1,7 @@
 package com.roitium.nodal.ui.screens.memoDetail
 
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -33,7 +35,9 @@ fun MemoDetailScreen(
     viewModel: MemoDetailViewModel = viewModel(),
     onNavigateBack: () -> Unit,
     onClickReferredMemo: (id: String) -> Unit,
-    onNavigateToPublish: (memoId: String?, replyToMemoId: String?) -> Unit
+    onNavigateToPublish: (memoId: String?, replyToMemoId: String?) -> Unit,
+    animatedVisibilityScope: AnimatedVisibilityScope,
+    sharedTransitionScope: SharedTransitionScope,
 ) {
     val scrollState = rememberScrollState()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -93,7 +97,9 @@ fun MemoDetailScreen(
                             onClickReferredMemo = onClickReferredMemo,
                             onClickEdit = { id ->
                                 onNavigateToPublish(id, null)
-                            }
+                            },
+                            animatedVisibilityScope = animatedVisibilityScope,
+                            sharedTransitionScope = sharedTransitionScope
                         )
                     }
                 }

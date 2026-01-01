@@ -1,5 +1,7 @@
 package com.roitium.nodal.ui.screens.imageViewer
 
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,7 +12,11 @@ import me.saket.telephoto.zoomable.coil.ZoomableAsyncImage
 import me.saket.telephoto.zoomable.rememberZoomableImageState
 
 @Composable
-fun FullScreenImageViewer(imageUrl: String, onDismiss: () -> Unit) {
+fun FullScreenImageViewer(
+    imageUrl: String, onDismiss: () -> Unit,
+    animatedVisibilityScope: AnimatedVisibilityScope,
+    sharedTransitionScope: SharedTransitionScope,
+) {
     val state = rememberZoomableImageState()
 
     Box(
@@ -18,12 +24,19 @@ fun FullScreenImageViewer(imageUrl: String, onDismiss: () -> Unit) {
             .fillMaxSize()
             .background(Color.Black)
     ) {
-        ZoomableAsyncImage(
-            model = imageUrl,
-            contentDescription = "Image Viewer",
-            state = state,
-            onClick = { onDismiss() },
-            modifier = Modifier.fillMaxSize()
-        )
+        with(sharedTransitionScope) {
+            ZoomableAsyncImage(
+                model = imageUrl,
+                contentDescription = "Image Viewer",
+                state = state,
+                onClick = { onDismiss() },
+                modifier = Modifier
+                    .fillMaxSize()
+                    .sharedElement(
+                        sharedContentState = rememberSharedContentState(key = "image-$imageUrl"),
+                        animatedVisibilityScope = animatedVisibilityScope,
+                    )
+            )
+        }
     }
 }

@@ -117,12 +117,7 @@ data class RecordUploadRequest(
     val filename: String
 )
 
-@Serializable
-data class PatchMemoRequest(
-    val content: String?,
-    val visibility: String?,
-    val quoteId: String?,
-    val resources: List<String>?,
-    val createdAt: Long?,
-    val isPinned: Boolean?
-)
+sealed interface PatchQuoteMemoField {
+    data object Empty : PatchQuoteMemoField
+    data class Exist(val memo: Memo) : PatchQuoteMemoField
+}

@@ -1,10 +1,10 @@
 package com.roitium.nodal.data.api
 
 import com.roitium.nodal.data.models.Memo
-import com.roitium.nodal.data.models.PatchMemoRequest
 import com.roitium.nodal.data.models.PublishRequest
 import com.roitium.nodal.data.models.Response
 import com.roitium.nodal.data.models.TimelineResponse
+import kotlinx.serialization.json.JsonObject
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
@@ -31,7 +31,7 @@ interface NodalMemoApi {
     @PATCH("/api/v1/memos/{memoId}")
     suspend fun patchMemo(
         @Path("memoId") memoId: String,
-        @Body request: PatchMemoRequest
+        @Body request: JsonObject
     ): Response<Boolean>
 
     @GET("/api/v1/memos/{memoId}")

@@ -1,6 +1,8 @@
 package com.roitium.nodal.ui.components
 
 import android.text.format.DateUtils
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -63,7 +65,9 @@ fun MemoCard(
     onDelete: (id: String) -> Unit,
     onClickMemo: ((id: String) -> Unit)?,
     onClickReferredMemo: ((id: String) -> Unit)?,
-    onClickEdit: (id: String) -> Unit
+    onClickEdit: (id: String) -> Unit,
+    animatedVisibilityScope: AnimatedVisibilityScope,
+    sharedTransitionScope: SharedTransitionScope,
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
     var expandedDropdownMenu by remember { mutableStateOf(false) }
@@ -186,22 +190,29 @@ fun MemoCard(
             if (memo.resources.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(16.dp))
                 memo.resources.forEach { resource ->
-                    AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data(resource.externalLink)
-                            .diskCachePolicy(CachePolicy.DISABLED)
-                            .memoryCachePolicy(CachePolicy.ENABLED)
-                            .build(),
-                        contentDescription = "Resource",
-                        modifier = Modifier
-                            .size(100.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .clickable {
-                                onClickImage(resource.externalLink)
-                            },
-                        contentScale = ContentScale.Crop
-                    )
+                    with(sharedTransitionScope) {
+                        AsyncImage(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(resource.externalLink)
+                                .diskCachePolicy(CachePolicy.DISABLED)
+                                .memoryCachePolicy(CachePolicy.ENABLED)
+                                .build(),
+                            contentDescription = "Resource",
+                            modifier = Modifier
+                                .size(100.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable {
+                                    onClickImage(resource.externalLink)
+                                }
+                                .sharedElement(
+                                    sharedContentState = rememberSharedContentState(key = "image-${resource.externalLink}"),
+                                    animatedVisibilityScope = animatedVisibilityScope,
+                                ),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
                 }
+
             }
             if (memo.quotedMemo != null) {
                 Spacer(modifier = Modifier.height(16.dp))
