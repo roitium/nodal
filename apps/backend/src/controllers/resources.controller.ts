@@ -7,7 +7,7 @@ import { GeneralCode, ResourceCode } from '@/utils/code'
 import { fail, success } from '@/utils/response'
 import { and, desc, eq } from 'drizzle-orm'
 import Elysia, { t } from 'elysia'
-import { uuidv7 } from 'uuidv7'
+import { v7 as uuidv7 } from 'uuid'
 
 export const resourcesController = new Elysia({
 	prefix: '/resources',
@@ -53,7 +53,7 @@ export const resourcesController = new Elysia({
 	)
 	.get(
 		'/upload-url',
-		async ({ user, status, query, traceId }) => {
+		async ({ user, status, query, traceId, jwt }) => {
 			if (!user)
 				return status(
 					401,
@@ -85,9 +85,20 @@ export const resourcesController = new Elysia({
 				)
 			const path = `resources/${user.id}/${uuidv7()}.${ext}`
 
+			const payload = {
+				user: user.id,
+				path,
+				fileType,
+				ext,
+			}
+			const token = await jwt.sign(payload)
+
 			const result = await storageService.getUploadUrl(path, fileType)
 
-			return status(200, success({ data: result, traceId: traceId }))
+			return status(
+				200,
+				success({ data: { ...result, signature: token }, traceId: traceId }),
+			)
 		},
 		{
 			query: t.Object({
@@ -101,7 +112,7 @@ export const resourcesController = new Elysia({
 	)
 	.post(
 		'/record-upload',
-		async ({ user, db, status, body, traceId }) => {
+		async ({ user, db, status, body, traceId, jwt }) => {
 			if (!user)
 				return status(
 					401,
@@ -119,6 +130,28 @@ export const resourcesController = new Elysia({
 					403,
 					fail({
 						message: '请求路径不合法',
+						traceId: traceId,
+						code: ResourceCode.illegalParam,
+					}),
+				)
+			}
+			const { signature } = body
+			const payload = await jwt.verify(signature)
+			if (payload === false) {
+				return status(
+					403,
+					fail({
+						message: '签名验证失败',
+						traceId: traceId,
+						code: ResourceCode.illegalParam,
+					}),
+				)
+			}
+			if (payload.path !== path || payload.user !== user.id) {
+				return status(
+					403,
+					fail({
+						message: '签名内包含数据与请求不一致',
 						traceId: traceId,
 						code: ResourceCode.illegalParam,
 					}),
@@ -159,6 +192,7 @@ export const resourcesController = new Elysia({
 				fileType: t.String(),
 				fileSize: t.Number(),
 				filename: t.String(),
+				signature: t.String(),
 			}),
 			detail: {
 				description: '创建资源记录',

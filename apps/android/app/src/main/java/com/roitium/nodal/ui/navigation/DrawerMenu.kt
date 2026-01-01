@@ -14,21 +14,20 @@ data class DrawerItem(
 
 val drawerScreens = listOf(
     DrawerItem(
-        label = "Your Memos",
+        label = "探索",
+        icon = Icons.Default.Map,
+        route = NodalDestinations.buildTimelineRoute(TIMELINE_TYPE.GLOBAL),
+        type = "global"
+    ),
+    DrawerItem(
+        label = "我的",
         icon = Icons.AutoMirrored.Filled.List,
         route = NodalDestinations.buildTimelineRoute(TIMELINE_TYPE.PERSONAL),
         type = "personal"
     ),
 
     DrawerItem(
-        label = "Explore",
-        icon = Icons.Default.Map,
-        route = NodalDestinations.buildTimelineRoute(TIMELINE_TYPE.GLOBAL),
-        type = "global"
-    ),
-
-    DrawerItem(
-        label = "Resources",
+        label = "资源库",
         icon = Icons.Default.Map,
         route = NodalDestinations.RESOURCE_ROUTE,
         type = null

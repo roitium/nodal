@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.roitium.nodal.data.NodalRepository
 import com.roitium.nodal.data.models.Memo
+import com.roitium.nodal.ui.navigation.NodalDestinations
 import dagger.hilt.android.lifecycle.HiltViewModel
 import jakarta.inject.Inject
 import kotlinx.coroutines.NonCancellable
@@ -29,7 +30,7 @@ sealed interface MemoDetailUiState {
 class MemoDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
-    private val memoId: String? = savedStateHandle["memoId"]
+    private val memoId: String? = savedStateHandle[NodalDestinations.Args.MEMO_ID]
 
     val uiState: StateFlow<MemoDetailUiState> = flow {
         if (memoId == null) {

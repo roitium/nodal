@@ -197,7 +197,14 @@ fun NodalApp() {
                             )
                         ) {
                             TimelineScreen(
-                                onNavigateToPublish = { navController.navigate(NodalDestinations.PUBLISH_ROUTE) },
+                                onNavigateToPublish = { memoId, replyToMemoId ->
+                                    navController.navigate(
+                                        NodalDestinations.buildPublishRoute(
+                                            replyToMemoId,
+                                            memoId
+                                        )
+                                    )
+                                },
                                 onOpenDrawer = {
                                     scope.launch { drawerState.open() }
                                 },
@@ -267,6 +274,14 @@ fun NodalApp() {
                                     val destination =
                                         NodalDestinations.buildMemoDetailRoute(it)
                                     navController.navigate(destination)
+                                },
+                                onNavigateToPublish = { memoId, replyToMemoId ->
+                                    navController.navigate(
+                                        NodalDestinations.buildPublishRoute(
+                                            replyToMemoId,
+                                            memoId
+                                        )
+                                    )
                                 }
                             )
                         }

@@ -11,7 +11,7 @@ enum class TIMELINE_TYPE {
 object NodalDestinations {
     const val TIMELINE_ROUTE = "timeline?type={type}&username={username}"
     const val IMAGE_VIEWER_ROUTE = "image_viewer/{url}"
-    const val PUBLISH_ROUTE = "publish"
+    const val PUBLISH_ROUTE = "publish?replyToMemoId={replyToMemoId}&memoId={memoId}"
     const val LOGIN_ROUTE = "login"
     const val REGISTER_ROUTE = "register"
     const val RESOURCE_ROUTE = "resource"
@@ -22,6 +22,7 @@ object NodalDestinations {
         const val USERNAME = "username"
         const val URL = "url"
         const val MEMO_ID = "memoId"
+        const val REPLY_TO_MEMO_ID = "replyToMemoId"
     }
 
     /**
@@ -53,5 +54,9 @@ object NodalDestinations {
 
     fun buildMemoDetailRoute(id: String): String {
         return "memo_detail/$id"
+    }
+
+    fun buildPublishRoute(replyToMemoId: String? = null, memoId: String? = null): String {
+        return "publish?replyToMemoId=$replyToMemoId&memoId=$memoId"
     }
 }

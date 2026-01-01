@@ -45,7 +45,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun TimelineScreen(
     viewModel: TimelineViewModel = viewModel(),
-    onNavigateToPublish: () -> Unit,
+    onNavigateToPublish: (memoId: String?, replyToMemoId: String?) -> Unit,
     onOpenDrawer: () -> Unit,
     onClickImage: (url: String?) -> Unit,
     onNavigateToMemoDetail: (memoId: String) -> Unit
@@ -91,7 +91,9 @@ fun TimelineScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = onNavigateToPublish) {
+            FloatingActionButton(onClick = {
+                onNavigateToPublish(null, null)
+            }) {
                 Icon(Icons.Default.Add, contentDescription = "发布")
             }
         }
@@ -133,7 +135,10 @@ fun TimelineScreen(
                                 memo, onClickImage = onClickImage, onDelete = { id ->
                                     viewModel.deleteMemo(id)
                                 }, onClickMemo = onNavigateToMemoDetail,
-                                onClickReferredMemo = onNavigateToMemoDetail
+                                onClickReferredMemo = onNavigateToMemoDetail,
+                                onClickEdit = { id ->
+                                    onNavigateToPublish(id, null)
+                                }
                             )
                         }
                         if (uiState.isLoading && uiState.memos.isNotEmpty()) {

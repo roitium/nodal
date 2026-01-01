@@ -7,7 +7,7 @@ import { fail, success } from '@/utils/response'
 import { jwt } from '@elysiajs/jwt'
 import { eq, or } from 'drizzle-orm'
 import { Elysia, t } from 'elysia'
-import { uuidv7 } from 'uuidv7'
+import { v7 as uuidv7 } from 'uuid'
 
 export const authController = new Elysia({ prefix: '/auth', tags: ['auth'] })
 	.use(dbPlugin)

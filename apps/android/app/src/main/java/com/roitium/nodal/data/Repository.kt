@@ -49,7 +49,7 @@ sealed class AuthState {
 }
 
 object NodalRepository {
-    private const val BASE_URL = "https://nodal.roitium.com"
+    private const val BASE_URL = "http://10.0.2.2:3000"
 
     @Volatile
     private var cachedAuthToken: String? = null
@@ -231,6 +231,10 @@ object NodalRepository {
 
             is ApiResult.Success -> {
                 // 乐观更新，同时把新创建的 memo 插入到最顶端
+                updateEntities(listOf(result.data))
+                _exploreTimeline.update { currentList ->
+                    listOf(result.data.id) + currentList
+                }
                 if (result.data.author?.username != null) {
                     _personalTimeline.update { currentMap ->
                         val newList =
@@ -238,11 +242,7 @@ object NodalRepository {
                                 ?: emptyList())
                         currentMap + (result.data.author.username to newList)
                     }
-                    _exploreTimeline.update { currentList ->
-                        listOf(result.data.id) + currentList
-                    }
                 }
-                updateEntities(listOf(result.data))
                 return result.data
             }
         }
@@ -414,7 +414,7 @@ object NodalRepository {
         }
     }
 
-    suspend fun searchMemos(keyword: String): List<Memo> {
+    fun searchMemos(keyword: String): Flow<List<Memo>> = flow {
         val response = memoApi.searchMemos(keyword)
         when (val result = response.toApiResult()) {
             is ApiResult.Failure -> {
@@ -422,7 +422,7 @@ object NodalRepository {
             }
 
             is ApiResult.Success -> {
-                return result.data
+                emit(result.data)
             }
         }
     }

@@ -1,5 +1,6 @@
 package com.roitium.nodal.ui.screens.publish
 
+import SnackbarManager
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -45,6 +46,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -70,13 +72,36 @@ fun PublishScreen(
     val pickMedia =
         rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia()) { uris ->
             if (uris.isNotEmpty()) {
-                val resources = uris.map { uri -> ResourceUri(uri) }
+                val resources =
+                    uris.map { uri -> ResourceUnify.Local(resource = ResourceUri(uri = uri)) }
                 viewModel.onResourcesSelected(resources, context)
             }
         }
     val hasUnsavedChanges =
-        viewModel.content.isNotBlank() || viewModel.selectedResources.isNotEmpty()
+        viewModel.content.isNotBlank() || viewModel.resources.isNotEmpty()
     var showReferredMemoDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(true) {
+        viewModel.uiEvent.collect { event ->
+            when (event) {
+                is PublishUiEvent.ShowMessage -> {
+                    SnackbarManager.showMessage(event.message)
+                }
+
+                is PublishUiEvent.PublishSuccess -> {
+                    SnackbarManager.showMessage(event.msg)
+                }
+
+                is PublishUiEvent.UploadError -> {
+                    SnackbarManager.showMessage("文件 ${event.fileName} 上传失败: ${event.error}")
+                }
+
+                is PublishUiEvent.NavigateBack -> {
+                    onNavigateBack()
+                }
+            }
+        }
+    }
 
     BackHandler(
         enabled = hasUnsavedChanges,
@@ -121,13 +146,13 @@ fun PublishScreen(
                 },
                 actions = {
                     Button(
-                        onClick = { viewModel.publish(onSuccess = onNavigateBack) },
-                        enabled = (viewModel.content.isNotBlank() || viewModel.selectedResources.isNotEmpty()) && !viewModel.isLoading,
+                        onClick = { viewModel.publish() },
+                        enabled = (viewModel.content.isNotBlank() || viewModel.resources.isNotEmpty()) && !viewModel.isPublishLoading,
                         modifier = Modifier
                             .windowInsetsPadding(WindowInsets.displayCutout)
                             .padding(end = 8.dp)
                     ) {
-                        if (viewModel.isLoading) {
+                        if (viewModel.isPublishLoading) {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(16.dp),
                                 color = MaterialTheme.colorScheme.onPrimary
@@ -142,129 +167,145 @@ fun PublishScreen(
             )
         }
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .padding(paddingValues)
-                .fillMaxSize()
-                .padding(16.dp)
-                .imePadding()
-        ) {
-            OutlinedTextField(
-                value = viewModel.content,
-                onValueChange = viewModel::onContentChanged,
+        if (viewModel.isInitialLoading) {
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                placeholder = { Text("在想些什么？") },
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surface,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                    disabledContainerColor = MaterialTheme.colorScheme.surface,
-                )
-            )
-
-            if (viewModel.selectedResources.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(8.dp))
-                LazyRow(
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.3f)),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        } else {
+            Column(
+                modifier = Modifier
+                    .padding(paddingValues)
+                    .fillMaxSize()
+                    .padding(16.dp)
+                    .imePadding()
+            ) {
+                OutlinedTextField(
+                    value = viewModel.content,
+                    onValueChange = viewModel::onContentChanged,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(100.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(
-                        viewModel.selectedResources,
-                        key = { item -> item.uri.toString() }) { item ->
-                        Box(modifier = Modifier.size(100.dp)) {
-                            AsyncImage(
-                                model = item.uri,
-                                contentDescription = null,
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop
-                            )
-                            if (item.isLoading) {
-                                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                            }
-                            Box(
-                                modifier = Modifier
-                                    .align(Alignment.TopEnd)
-                                    .padding(4.dp)
-                                    .size(20.dp)
-                                    .background(
-                                        color = Color.Black.copy(alpha = 0.5f),
-                                        shape = CircleShape
-                                    )
-                                    .clickable {
-                                        viewModel.onRemoveResource(item)
-                                    },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Close,
-                                    contentDescription = "Remove",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(14.dp)
+                        .weight(1f),
+                    placeholder = { Text("在想些什么？") },
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = MaterialTheme.colorScheme.surface,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                        disabledContainerColor = MaterialTheme.colorScheme.surface,
+                    )
+                )
+
+                if (viewModel.resources.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    LazyRow(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(100.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(
+                            viewModel.resources,
+                            key = { item ->
+                                when (item) {
+                                    is ResourceUnify.Local -> item.resource.uri.toString()
+                                    is ResourceUnify.Remote -> item.resource.id
+                                }
+                            }) { item ->
+                            Box(modifier = Modifier.size(100.dp)) {
+                                AsyncImage(
+                                    model = if (item is ResourceUnify.Local) item.resource.uri else if (item is ResourceUnify.Remote) item.resource.externalLink else null,
+                                    contentDescription = null,
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop
                                 )
+                                if (item is ResourceUnify.Local && item.resource.isLoading) {
+                                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .align(Alignment.TopEnd)
+                                        .padding(4.dp)
+                                        .size(20.dp)
+                                        .background(
+                                            color = Color.Black.copy(alpha = 0.5f),
+                                            shape = CircleShape
+                                        )
+                                        .clickable {
+                                            viewModel.onRemoveResource(item)
+                                        },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Close,
+                                        contentDescription = "Remove",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                }
                             }
                         }
                     }
+                    Spacer(modifier = Modifier.height(16.dp))
                 }
-                Spacer(modifier = Modifier.height(16.dp))
-            }
-            if (viewModel.referredMemo != null) {
-                Spacer(modifier = Modifier.height(8.dp))
-                AssistChip(
-                    onClick = { showReferredMemoDialog = true },
-                    label = {
-                        Text(
-                            viewModel.referredMemo!!.content,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                if (viewModel.referredMemo != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    AssistChip(
+                        onClick = { viewModel.deleteReferredMemo() },
+                        label = {
+                            Text(
+                                viewModel.referredMemo!!.content,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Default.Link,
+                                contentDescription = null,
+                                modifier = Modifier.size(AssistChipDefaults.IconSize)
+                            )
+                        }
+                    )
+                }
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row {
+                        IconButton(onClick = {
+                            pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo))
+                        }) {
+                            Icon(Icons.Default.Image, contentDescription = "Add Media")
+                        }
+                        IconButton(onClick = {
+                            showReferredMemoDialog = true
+                        }) {
+                            Icon(Icons.Default.Link, contentDescription = "Refer Memo")
+                        }
+                    }
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(
+                            checked = viewModel.isPrivate,
+                            onCheckedChange = { viewModel.onIsPrivateChanged(it) }
                         )
-                    },
-                    leadingIcon = {
-                        Icon(
-                            Icons.Default.Link,
-                            contentDescription = null,
-                            modifier = Modifier.size(AssistChipDefaults.IconSize)
-                        )
+                        Text("私密")
+                    }
+                }
+                ReferMemoDialog(
+                    showDialog = showReferredMemoDialog,
+                    onDismiss = { showReferredMemoDialog = false },
+                    onSetReferredMemo = { memoId ->
+                        viewModel.updateReferredMemoId(memoId)
+                        showReferredMemoDialog = false
                     }
                 )
             }
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row {
-                    IconButton(onClick = {
-                        pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo))
-                    }) {
-                        Icon(Icons.Default.Image, contentDescription = "Add Media")
-                    }
-                    IconButton(onClick = {
-                        showReferredMemoDialog = true
-                    }) {
-                        Icon(Icons.Default.Link, contentDescription = "Refer Memo")
-                    }
-                }
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(
-                        checked = viewModel.isPrivate,
-                        onCheckedChange = { viewModel.onIsPrivateChanged(it) }
-                    )
-                    Text("私密")
-                }
-            }
-            ReferMemoDialog(
-                showDialog = showReferredMemoDialog,
-                onDismiss = { showReferredMemoDialog = false },
-                onSetReferredMemo = { memoId ->
-                    viewModel.updateReferredMemoId(memoId)
-                    showReferredMemoDialog = false
-                }
-            )
         }
     }
 }

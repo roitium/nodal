@@ -8,6 +8,7 @@ import com.roitium.nodal.data.AuthState
 import com.roitium.nodal.data.NodalRepository
 import com.roitium.nodal.data.models.Cursor
 import com.roitium.nodal.data.models.Memo
+import com.roitium.nodal.ui.navigation.NodalDestinations
 import dagger.hilt.android.lifecycle.HiltViewModel
 import jakarta.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -37,8 +38,8 @@ class TimelineViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    private val timelineType: String? = savedStateHandle["type"]
-    private val targetUsername: String? = savedStateHandle["username"]
+    private val timelineType: String? = savedStateHandle[NodalDestinations.Args.TYPE]
+    private val targetUsername: String? = savedStateHandle[NodalDestinations.Args.USERNAME]
 
     // 分页游标 (保持在 VM 内部)
     var nextCursor: Cursor? = null

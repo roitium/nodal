@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.RemoveRedEye
@@ -61,12 +62,11 @@ fun MemoCard(
     onClickImage: (url: String?) -> Unit,
     onDelete: (id: String) -> Unit,
     onClickMemo: ((id: String) -> Unit)?,
-    onClickReferredMemo: ((id: String) -> Unit)?
+    onClickReferredMemo: ((id: String) -> Unit)?,
+    onClickEdit: (id: String) -> Unit
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
     var expandedDropdownMenu by remember { mutableStateOf(false) }
-
-
 
     Card(
         modifier = containerModifier
@@ -140,6 +140,22 @@ fun MemoCard(
                         DropdownMenuItem(
                             text = {
                                 Text(
+                                    "修改",
+                                )
+                            }, onClick = {
+                                expandedDropdownMenu = false
+                                onClickEdit(memo.id)
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Default.Edit,
+                                    contentDescription = "edit",
+                                )
+                            })
+
+                        DropdownMenuItem(
+                            text = {
+                                Text(
                                     "删除 memo",
                                     color = MaterialTheme.colorScheme.error
                                 )
@@ -154,6 +170,7 @@ fun MemoCard(
                                     tint = MaterialTheme.colorScheme.error
                                 )
                             })
+
                     }
                 }
             }

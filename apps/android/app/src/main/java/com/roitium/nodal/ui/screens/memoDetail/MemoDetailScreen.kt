@@ -32,7 +32,8 @@ fun MemoDetailScreen(
     onClickImage: (url: String?) -> Unit,
     viewModel: MemoDetailViewModel = viewModel(),
     onNavigateBack: () -> Unit,
-    onClickReferredMemo: (id: String) -> Unit
+    onClickReferredMemo: (id: String) -> Unit,
+    onNavigateToPublish: (memoId: String?, replyToMemoId: String?) -> Unit
 ) {
     val scrollState = rememberScrollState()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -89,7 +90,10 @@ fun MemoDetailScreen(
                             containerColor = MaterialTheme.colorScheme.surface,
                             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
                             onClickMemo = null,
-                            onClickReferredMemo = onClickReferredMemo
+                            onClickReferredMemo = onClickReferredMemo,
+                            onClickEdit = { id ->
+                                onNavigateToPublish(id, null)
+                            }
                         )
                     }
                 }

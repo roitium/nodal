@@ -7,7 +7,11 @@ import { GeneralCode, MemoCode, UserCode } from '@/utils/code'
 import { fail, success } from '@/utils/response'
 import { and, desc, eq, inArray, isNull, like, lt, or } from 'drizzle-orm'
 import { Elysia, t } from 'elysia'
-import { uuidv7 } from 'uuidv7'
+import {
+	v7 as uuidv7,
+	validate as uuidValidate,
+	version as uuidVersion,
+} from 'uuid'
 
 export const memosController = new Elysia({ prefix: '/memos', tags: ['memos'] })
 	.use(authPlugin)
@@ -164,7 +168,19 @@ export const memosController = new Elysia({ prefix: '/memos', tags: ['memos'] })
 					}),
 				)
 
-			const newId = uuidv7()
+			if (body.id) {
+				if (!(uuidValidate(body.id) && uuidVersion(body.id) === 7)) {
+					return status(
+						400,
+						fail({
+							message: 'id 不是有效的 UUIDv7',
+							code: MemoCode.ValidationFailed,
+							traceId: traceId,
+						}),
+					)
+				}
+			}
+			const newId = body.id ?? uuidv7()
 			let path = `/${newId}/`
 
 			if (body.parentId) {
@@ -224,6 +240,42 @@ export const memosController = new Elysia({ prefix: '/memos', tags: ['memos'] })
 
 			const result = await db.query.memos.findFirst({
 				where: eq(memos.id, newId),
+				with: {
+					author: {
+						columns: {
+							id: true,
+							username: true,
+							displayName: true,
+							avatarUrl: true,
+							bio: true,
+							createdAt: true,
+						},
+					},
+					quotedMemo: true,
+					resources: {
+						columns: {
+							id: true,
+							externalLink: true,
+							type: true,
+							size: true,
+							memoId: true,
+							filename: true,
+							createdAt: true,
+						},
+					},
+					replies: {
+						with: {
+							author: {
+								columns: {
+									id: true,
+									username: true,
+									displayName: true,
+									avatarUrl: true,
+								},
+							},
+						},
+					},
+				},
 			})
 			return status(200, success({ data: result, traceId: traceId }))
 		},
@@ -238,6 +290,7 @@ export const memosController = new Elysia({ prefix: '/memos', tags: ['memos'] })
 				resources: t.Optional(t.Array(t.String({ format: 'uuid' }))),
 				isPinned: t.Optional(t.Boolean()),
 				createdAt: t.Optional(t.Number()),
+				id: t.Optional(t.String({ format: 'uuid' })),
 			}),
 			detail: {
 				description: '发布 / 评论 / 转发',
@@ -477,6 +530,16 @@ export const memosController = new Elysia({ prefix: '/memos', tags: ['memos'] })
 						traceId: traceId,
 					}),
 				)
+			if (query.keyword.trim() === '') {
+				return status(
+					400,
+					fail({
+						message: '关键词不能为空',
+						code: MemoCode.ValidationFailed,
+						traceId: traceId,
+					}),
+				)
+			}
 			const keyword = `%${query.keyword}%`
 			const result = await db.query.memos.findMany({
 				where: and(
