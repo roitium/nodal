@@ -55,7 +55,7 @@ sealed class AuthState {
 }
 
 object NodalRepository {
-    private const val BASE_URL = "http://10.0.2.2:3000"
+    private const val BASE_URL = "https://nodal.roitium.com"
 
     @Volatile
     private var cachedAuthToken: String? = null
@@ -237,14 +237,16 @@ object NodalRepository {
         content: String,
         visibility: String = "public",
         resources: List<String> = emptyList(),
-        referredMemoId: String? = null
+        referredMemoId: String? = null,
+        replyMemo: Memo?
     ): Memo {
         val response = memoApi.publish(
             PublishRequest(
                 content = content,
                 visibility = visibility,
                 resources = resources,
-                quoteId = referredMemoId
+                quoteId = referredMemoId,
+                parentId = replyMemo?.id
             )
         )
         when (val result = response.toApiResult()) {
@@ -315,7 +317,8 @@ object NodalRepository {
                 path = uploadInfo.path,
                 fileType = type,
                 fileSize = bytes.size.toLong(),
-                filename = filename
+                filename = filename,
+                signature = uploadInfo.signature
             )
         )
 

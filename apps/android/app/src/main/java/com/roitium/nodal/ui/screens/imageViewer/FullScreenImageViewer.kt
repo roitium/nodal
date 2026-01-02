@@ -33,8 +33,12 @@ fun FullScreenImageViewer(
                 modifier = Modifier
                     .fillMaxSize()
                     .sharedElement(
-                        sharedContentState = rememberSharedContentState(key = "image-$imageUrl"),
+                        sharedContentState = rememberSharedContentState(key = "timeline-page-image-$imageUrl"),
                         animatedVisibilityScope = animatedVisibilityScope,
+                    )
+                    .sharedElement(
+                        sharedContentState = rememberSharedContentState(key = "detail-page-image-$imageUrl"),
+                        animatedVisibilityScope = animatedVisibilityScope
                     )
             )
         }

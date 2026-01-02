@@ -4,7 +4,9 @@ import android.text.format.DateUtils
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,6 +17,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowRightAlt
+import androidx.compose.material.icons.automirrored.filled.Comment
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
@@ -61,13 +65,17 @@ fun MemoCard(
     containerColor: Color = MaterialTheme.colorScheme.surfaceContainer,
     elevation: CardElevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
     containerModifier: Modifier = Modifier,
+    onlyShowContent: Boolean = false,
     onClickImage: (url: String?) -> Unit,
     onDelete: (id: String) -> Unit,
     onClickMemo: ((id: String) -> Unit)?,
     onClickReferredMemo: ((id: String) -> Unit)?,
     onClickEdit: (id: String) -> Unit,
+    onClickReply: (id: String) -> Unit,
     animatedVisibilityScope: AnimatedVisibilityScope,
     sharedTransitionScope: SharedTransitionScope,
+    imageSharedContentKeyPrefix: String,
+    onClickAvatar: (username: String) -> Unit,
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
     var expandedDropdownMenu by remember { mutableStateOf(false) }
@@ -100,8 +108,11 @@ fun MemoCard(
                     contentDescription = "Avatar",
                     modifier = Modifier
                         .size(40.dp)
-                        .clip(CircleShape),
-                    contentScale = ContentScale.Crop
+                        .clip(CircleShape)
+                        .clickable {
+                            onClickAvatar(memo.author?.username ?: "")
+                        },
+                    contentScale = ContentScale.Crop,
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Column(modifier = Modifier.weight(1f)) {
@@ -136,45 +147,53 @@ fun MemoCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                IconButton(onClick = { expandedDropdownMenu = true }) {
-                    Icon(Icons.Default.MoreVert, contentDescription = "more actions")
-                    DropdownMenu(
-                        expanded = expandedDropdownMenu,
-                        onDismissRequest = { expandedDropdownMenu = false }) {
-                        DropdownMenuItem(
-                            text = {
-                                Text(
-                                    "修改",
-                                )
-                            }, onClick = {
-                                expandedDropdownMenu = false
-                                onClickEdit(memo.id)
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    Icons.Default.Edit,
-                                    contentDescription = "edit",
-                                )
-                            })
+                if (!onlyShowContent) {
+                    IconButton(onClick = { onClickReply(memo.id) }) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.Comment,
+                            contentDescription = "reply this memo",
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    IconButton(onClick = { expandedDropdownMenu = true }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "more actions")
+                        DropdownMenu(
+                            expanded = expandedDropdownMenu,
+                            onDismissRequest = { expandedDropdownMenu = false }) {
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        "修改",
+                                    )
+                                }, onClick = {
+                                    expandedDropdownMenu = false
+                                    onClickEdit(memo.id)
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Default.Edit,
+                                        contentDescription = "edit",
+                                    )
+                                })
 
-                        DropdownMenuItem(
-                            text = {
-                                Text(
-                                    "删除 memo",
-                                    color = MaterialTheme.colorScheme.error
-                                )
-                            }, onClick = {
-                                showDeleteDialog = true
-                                expandedDropdownMenu = false
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    Icons.Default.Delete,
-                                    contentDescription = "delete",
-                                    tint = MaterialTheme.colorScheme.error
-                                )
-                            })
-
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        "删除 memo",
+                                        color = MaterialTheme.colorScheme.error
+                                    )
+                                }, onClick = {
+                                    showDeleteDialog = true
+                                    expandedDropdownMenu = false
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Default.Delete,
+                                        contentDescription = "delete",
+                                        tint = MaterialTheme.colorScheme.error
+                                    )
+                                })
+                        }
                     }
                 }
             }
@@ -189,27 +208,34 @@ fun MemoCard(
             )
             if (memo.resources.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(16.dp))
-                memo.resources.forEach { resource ->
-                    with(sharedTransitionScope) {
-                        AsyncImage(
-                            model = ImageRequest.Builder(LocalContext.current)
-                                .data(resource.externalLink)
-                                .diskCachePolicy(CachePolicy.DISABLED)
-                                .memoryCachePolicy(CachePolicy.ENABLED)
-                                .build(),
-                            contentDescription = "Resource",
-                            modifier = Modifier
-                                .size(100.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .clickable {
-                                    onClickImage(resource.externalLink)
-                                }
-                                .sharedElement(
-                                    sharedContentState = rememberSharedContentState(key = "image-${resource.externalLink}"),
-                                    animatedVisibilityScope = animatedVisibilityScope,
-                                ),
-                            contentScale = ContentScale.Crop
-                        )
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    maxItemsInEachRow = 3
+                ) {
+                    memo.resources.forEach { resource ->
+                        with(sharedTransitionScope) {
+                            AsyncImage(
+                                model = ImageRequest.Builder(LocalContext.current)
+                                    .data(resource.externalLink)
+                                    .diskCachePolicy(CachePolicy.DISABLED)
+                                    .memoryCachePolicy(CachePolicy.ENABLED)
+                                    .build(),
+                                contentDescription = "Resource",
+                                modifier = Modifier
+                                    .size(100.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable {
+                                        onClickImage(resource.externalLink)
+                                    }
+                                    .sharedElement(
+                                        sharedContentState = rememberSharedContentState(key = "${imageSharedContentKeyPrefix}-${resource.externalLink}"),
+                                        animatedVisibilityScope = animatedVisibilityScope,
+                                    ),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
                     }
                 }
 
@@ -239,6 +265,22 @@ fun MemoCard(
                         )
                     }
 
+                }
+            }
+            if (memo.replies.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Spacer(modifier = Modifier.weight(1f))
+                    Text(
+                        "查看 ${memo.replies.size} 条回复",
+                        style = MaterialTheme.typography.labelMedium
+                    )
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowRightAlt,
+                        contentDescription = "reply",
+                    )
                 }
             }
         }

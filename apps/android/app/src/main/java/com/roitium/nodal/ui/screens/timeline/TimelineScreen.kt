@@ -53,6 +53,7 @@ fun TimelineScreen(
     onNavigateToMemoDetail: (memoId: String) -> Unit,
     animatedVisibilityScope: AnimatedVisibilityScope,
     sharedTransitionScope: SharedTransitionScope,
+    onNavigateToTimeline: (username: String) -> Unit,
 ) {
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
@@ -91,14 +92,21 @@ fun TimelineScreen(
                                 }
                             },
                         )
-                    }
-            )
+                    })
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = {
-                onNavigateToPublish(null, null)
-            }) {
-                Icon(Icons.Default.Add, contentDescription = "发布")
+            with(sharedTransitionScope) {
+                FloatingActionButton(
+                    onClick = {
+                        onNavigateToPublish(null, null)
+                    }, modifier = Modifier.sharedBounds(
+                        sharedContentState = rememberSharedContentState(key = "click-fab"),
+                        animatedVisibilityScope = animatedVisibilityScope,
+                        resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds
+                    )
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "发布")
+                }
             }
         }
     ) { paddingValues ->
@@ -135,17 +143,31 @@ fun TimelineScreen(
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         items(uiState.memos, key = { memo -> memo.id }) { memo ->
-                            MemoCard(
-                                memo, onClickImage = onClickImage, onDelete = { id ->
-                                    viewModel.deleteMemo(id)
-                                }, onClickMemo = onNavigateToMemoDetail,
-                                onClickReferredMemo = onNavigateToMemoDetail,
-                                onClickEdit = { id ->
-                                    onNavigateToPublish(id, null)
-                                },
-                                animatedVisibilityScope = animatedVisibilityScope,
-                                sharedTransitionScope = sharedTransitionScope
-                            )
+                            with(sharedTransitionScope) {
+                                MemoCard(
+                                    memo, onClickImage = onClickImage, onDelete = { id ->
+                                        viewModel.deleteMemo(id)
+                                    }, onClickMemo = onNavigateToMemoDetail,
+                                    onClickReferredMemo = onNavigateToMemoDetail,
+                                    onClickEdit = { id ->
+                                        onNavigateToPublish(id, null)
+                                    },
+                                    animatedVisibilityScope = animatedVisibilityScope,
+                                    sharedTransitionScope = sharedTransitionScope,
+                                    onClickReply = { id ->
+                                        onNavigateToPublish(null, id)
+                                    },
+                                    containerModifier = Modifier.sharedBounds(
+                                        sharedContentState = rememberSharedContentState(
+                                            key = "memo-card-${memo.id}"
+                                        ),
+                                        animatedVisibilityScope = animatedVisibilityScope,
+                                        resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds
+                                    ),
+                                    imageSharedContentKeyPrefix = "timeline-page-image",
+                                    onClickAvatar = onNavigateToTimeline
+                                )
+                            }
                         }
                         if (uiState.isLoading && uiState.memos.isNotEmpty()) {
                             item {

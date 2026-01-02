@@ -106,7 +106,8 @@ data class Cursor(
 data class UploadUrlResponse(
     val uploadUrl: String,
     val path: String,
-    val headers: Map<String, String>? = null
+    val headers: Map<String, String>? = null,
+    val signature: String
 )
 
 @Serializable
@@ -114,7 +115,8 @@ data class RecordUploadRequest(
     val path: String,
     val fileType: String,
     val fileSize: Long,
-    val filename: String
+    val filename: String,
+    val signature: String
 )
 
 sealed interface PatchQuoteMemoField {

@@ -59,10 +59,14 @@ class PublishViewModel @Inject constructor(
     var isPublishLoading by mutableStateOf(false)
         private set
 
-    // 刚进入页面时加载 memo 详情的状态
-    var isInitialLoading by mutableStateOf(false)
+    var isLoadingRawMemo by mutableStateOf(false)
+        private set
+
+    var isLoadingReplyMemo by mutableStateOf(false)
         private set
     var referredMemo by mutableStateOf<Memo?>(null)
+        private set
+    var replyMemo by mutableStateOf<Memo?>(null)
         private set
 
     private val _uiEvent = Channel<PublishUiEvent>()
@@ -71,20 +75,37 @@ class PublishViewModel @Inject constructor(
     private val memoId: String? = savedStateHandle[NodalDestinations.Args.MEMO_ID]
 
     // wtf is this???? memoId 如果为空，会是一个 "null" 字符串？？？
-    private val realMemoId = if (memoId == "null") null else memoId
+    val realMemoId = if (memoId == "null") null else memoId
     private val replyToMemoId: String? = savedStateHandle[NodalDestinations.Args.REPLY_TO_MEMO_ID]
+    val realReplyToMemoId = if (replyToMemoId == "null") null else replyToMemoId
 
     init {
         if (realMemoId != null) {
             loadMemoForEdit(realMemoId)
-        } else {
-            isInitialLoading = false
+        }
+        if (realReplyToMemoId != null) {
+            loadMemoForReply(realReplyToMemoId)
+        }
+    }
+
+    private fun loadMemoForReply(id: String) {
+        viewModelScope.launch {
+            isLoadingReplyMemo = true
+            try {
+                val memo = NodalRepository.getMemoDetail(id).first()
+                replyMemo = memo
+            } catch (e: Exception) {
+                _uiEvent.send(PublishUiEvent.ShowMessage("加载回复的帖子: ${e.message}"))
+                _uiEvent.send(PublishUiEvent.NavigateBack)
+            } finally {
+                isLoadingReplyMemo = false
+            }
         }
     }
 
     private fun loadMemoForEdit(id: String) {
         viewModelScope.launch {
-            isInitialLoading = true
+            isLoadingRawMemo = true
             try {
                 val memo = NodalRepository.getMemoDetail(id).first()
 
@@ -101,7 +122,7 @@ class PublishViewModel @Inject constructor(
                 _uiEvent.send(PublishUiEvent.ShowMessage("加载原贴失败: ${e.message}"))
                 _uiEvent.send(PublishUiEvent.NavigateBack)
             } finally {
-                isInitialLoading = false
+                isLoadingRawMemo = false
             }
         }
     }
@@ -218,7 +239,8 @@ class PublishViewModel @Inject constructor(
                         content = content,
                         visibility = if (isPrivate) "private" else "public",
                         resources = resourceIds,
-                        referredMemoId = referredMemo?.id
+                        referredMemoId = referredMemo?.id,
+                        replyMemo = replyMemo
                     )
                     _uiEvent.send(PublishUiEvent.PublishSuccess())
                 } catch (e: Exception) {

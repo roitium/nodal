@@ -116,6 +116,7 @@ export const memosController = new Elysia({ prefix: '/memos', tags: ['memos'] })
 							createdAt: true,
 						},
 					},
+					// 我们只提供第一级回复的信息
 					replies: {
 						with: {
 							author: {
@@ -124,6 +125,18 @@ export const memosController = new Elysia({ prefix: '/memos', tags: ['memos'] })
 									username: true,
 									displayName: true,
 									avatarUrl: true,
+								},
+							},
+							quotedMemo: true,
+							resources: {
+								columns: {
+									id: true,
+									externalLink: true,
+									type: true,
+									size: true,
+									memoId: true,
+									filename: true,
+									createdAt: true,
 								},
 							},
 						},
@@ -340,7 +353,30 @@ export const memosController = new Elysia({ prefix: '/memos', tags: ['memos'] })
 							createdAt: true,
 						},
 					},
-					replies: true,
+					replies: {
+						with: {
+							author: {
+								columns: {
+									id: true,
+									username: true,
+									displayName: true,
+									avatarUrl: true,
+								},
+							},
+							quotedMemo: true,
+							resources: {
+								columns: {
+									id: true,
+									externalLink: true,
+									type: true,
+									size: true,
+									memoId: true,
+									filename: true,
+									createdAt: true,
+								},
+							},
+						},
+					},
 				},
 			})
 

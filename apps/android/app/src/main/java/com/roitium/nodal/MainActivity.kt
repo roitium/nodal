@@ -5,7 +5,6 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -162,8 +161,16 @@ fun NodalApp() {
                 }
             ) {
                 SharedTransitionLayout {
-                    NavHost(navController = navController, startDestination = startDestination) {
-                        composable(NodalDestinations.LOGIN_ROUTE) {
+                    NavHost(
+                        navController = navController,
+                        startDestination = startDestination,
+                        enterTransition = { fadeIn(tween(300)) },
+                        exitTransition = { fadeOut(tween(300)) },
+                        popEnterTransition = { fadeIn(tween(300)) },
+                        popExitTransition = { fadeOut(tween(300)) }) {
+                        composable(
+                            NodalDestinations.LOGIN_ROUTE
+                        ) {
                             LoginScreen(
                                 onNavigateToRegister = { navController.navigate(NodalDestinations.REGISTER_ROUTE) },
                                 onLoginSuccess = {
@@ -224,11 +231,21 @@ fun NodalApp() {
                                 },
                                 animatedVisibilityScope = this,
                                 sharedTransitionScope = this@SharedTransitionLayout,
+                                onNavigateToTimeline = {
+                                    val destination =
+                                        NodalDestinations.buildTimelineRoute(
+                                            TIMELINE_TYPE.PERSONAL,
+                                            it
+                                        )
+                                    navController.navigate(destination)
+                                }
                             )
                         }
                         composable(NodalDestinations.PUBLISH_ROUTE) {
                             PublishScreen(
-                                onNavigateBack = { navController.popBackStack() }
+                                onNavigateBack = { navController.popBackStack() },
+                                animatedVisibilityScope = this,
+                                sharedTransitionScope = this@SharedTransitionLayout,
                             )
                         }
                         composable(
@@ -270,32 +287,6 @@ fun NodalApp() {
                             arguments = listOf(navArgument(NodalDestinations.Args.MEMO_ID) {
                                 type = NavType.StringType
                             }),
-                            exitTransition = {
-                                if (targetState.destination.route?.startsWith("image_viewer") == true) {
-                                    fadeOut(animationSpec = tween(300))
-                                } else {
-                                    slideOutOfContainer(
-                                        AnimatedContentTransitionScope.SlideDirection.Right,
-                                        animationSpec = tween(500)
-                                    )
-                                }
-                            },
-                            enterTransition = {
-                                slideIntoContainer(
-                                    AnimatedContentTransitionScope.SlideDirection.Left,
-                                    animationSpec = tween(500)
-                                )
-                            },
-                            popEnterTransition = {
-                                if (initialState.destination.route?.startsWith("image_viewer") == true) {
-                                    fadeIn(animationSpec = tween(300))
-                                } else {
-                                    slideIntoContainer(
-                                        AnimatedContentTransitionScope.SlideDirection.Left,
-                                        animationSpec = tween(500)
-                                    )
-                                }
-                            }
                         ) {
                             MemoDetailScreen(
                                 onClickImage = { url ->
@@ -304,7 +295,7 @@ fun NodalApp() {
                                     navController.navigate(destination)
                                 },
                                 onNavigateBack = { navController.popBackStack() },
-                                onClickReferredMemo = {
+                                onNavigateToMemoDetail = {
                                     val destination =
                                         NodalDestinations.buildMemoDetailRoute(it)
                                     navController.navigate(destination)
@@ -319,6 +310,13 @@ fun NodalApp() {
                                 },
                                 animatedVisibilityScope = this,
                                 sharedTransitionScope = this@SharedTransitionLayout,
+                                onNavigateToTimeline = {
+                                    val destination = NodalDestinations.buildTimelineRoute(
+                                        TIMELINE_TYPE.PERSONAL,
+                                        it
+                                    )
+                                    navController.navigate(destination)
+                                }
                             )
                         }
                     }

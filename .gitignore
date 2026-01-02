@@ -42,3 +42,5 @@ package-lock.json
 **/*.bun
 .env
 /apps/android/keystore
+/apps/android/app/build
+/apps/android/app/release
