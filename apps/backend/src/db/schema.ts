@@ -49,7 +49,7 @@ export const memos = pgTable(
 		status: text('status', { enum: ['published', 'archived', 'deleted'] })
 			.default('published')
 			.notNull(),
-		isPinned: boolean('is_pinned').default(false),
+		isPinned: boolean('is_pinned').default(false).notNull(),
 
 		createdAt: timestamp('created_at').defaultNow().notNull(),
 		updatedAt: timestamp('updated_at')

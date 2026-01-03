@@ -91,7 +91,7 @@ export const memosController = new Elysia({ prefix: '/memos', tags: ['memos'] })
 
 			const data = await db.query.memos.findMany({
 				where: and(...filters),
-				orderBy: [desc(memos.createdAt), desc(memos.id)],
+				orderBy: [desc(memos.isPinned), desc(memos.createdAt), desc(memos.id)],
 				limit: limit + 1, // 多查一条判断有没有下一页
 				with: {
 					author: {
