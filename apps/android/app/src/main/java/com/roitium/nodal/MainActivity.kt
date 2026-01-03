@@ -24,21 +24,19 @@ import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.roitium.nodal.data.AuthState
-import com.roitium.nodal.data.NodalRepository
 import com.roitium.nodal.ui.components.AppDrawerContent
 import com.roitium.nodal.ui.navigation.NodalDestinations
 import com.roitium.nodal.ui.navigation.TIMELINE_TYPE
@@ -50,21 +48,13 @@ import com.roitium.nodal.ui.screens.register.RegisterScreen
 import com.roitium.nodal.ui.screens.resource.ResourceScreen
 import com.roitium.nodal.ui.screens.timeline.TimelineScreen
 import com.roitium.nodal.ui.theme.NodalTheme
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
+import com.roitium.nodal.utils.AuthState
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
-
     override fun onCreate(savedInstanceState: Bundle?) {
-        val splashScreen = installSplashScreen()
-
-        splashScreen.setKeepOnScreenCondition {
-            NodalRepository.authState.value is AuthState.Initializing
-        }
-        NodalRepository.initialize(this, applicationScope)
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
@@ -76,10 +66,10 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun NodalApp() {
+fun NodalApp(mainViewModel: MainViewModel = hiltViewModel()) {
     val navController = rememberNavController()
-    val authState by NodalRepository.authState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val authState by mainViewModel.authState.collectAsStateWithLifecycle()
 
     if (authState is AuthState.Initializing) {
         return
@@ -125,7 +115,7 @@ fun NodalApp() {
                             showLogoutDialog = false
                             scope.launch {
                                 drawerState.close()
-                                NodalRepository.logout()
+                                mainViewModel.logout()
                                 navController.navigate("login") {
                                     popUpTo(0) { inclusive = true }
                                 }

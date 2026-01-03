@@ -5,11 +5,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.roitium.nodal.data.NodalRepository
 import com.roitium.nodal.data.models.RegisterRequest
+import com.roitium.nodal.data.repository.AuthRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import jakarta.inject.Inject
 import kotlinx.coroutines.launch
 
-class RegisterViewModel : ViewModel() {
+@HiltViewModel
+class RegisterViewModel @Inject constructor(
+    private val authRepository: AuthRepository
+) : ViewModel() {
     var username by mutableStateOf("")
     var email by mutableStateOf("")
     var password by mutableStateOf("")
@@ -37,7 +42,7 @@ class RegisterViewModel : ViewModel() {
             isLoading = true
             error = null
             try {
-                NodalRepository.register(RegisterRequest(username, email, password))
+                authRepository.register(RegisterRequest(username, email, password))
                 onSuccess()
             } catch (e: Exception) {
                 error = e.message ?: "Registration failed"

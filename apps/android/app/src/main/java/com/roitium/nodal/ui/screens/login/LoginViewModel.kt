@@ -5,11 +5,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.roitium.nodal.data.NodalRepository
 import com.roitium.nodal.data.models.LoginRequest
+import com.roitium.nodal.data.repository.AuthRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import jakarta.inject.Inject
 import kotlinx.coroutines.launch
 
-class LoginViewModel : ViewModel() {
+@HiltViewModel
+class LoginViewModel @Inject constructor(
+    private val authRepository: AuthRepository
+) : ViewModel() {
     var login by mutableStateOf("")
     var password by mutableStateOf("")
     var isLoading by mutableStateOf(false)
@@ -32,7 +37,7 @@ class LoginViewModel : ViewModel() {
             isLoading = true
             error = null
             try {
-                NodalRepository.login(LoginRequest(login, password))
+                authRepository.login(LoginRequest(login, password))
                 onSuccess()
             } catch (e: Exception) {
                 error = e.message ?: "Login failed"

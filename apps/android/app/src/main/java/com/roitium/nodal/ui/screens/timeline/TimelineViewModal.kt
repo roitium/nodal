@@ -7,10 +7,11 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.roitium.nodal.data.AuthState
-import com.roitium.nodal.data.NodalRepository
 import com.roitium.nodal.data.models.Memo
+import com.roitium.nodal.data.repository.MemoRepository
 import com.roitium.nodal.ui.navigation.NodalDestinations
+import com.roitium.nodal.utils.AuthState
+import com.roitium.nodal.utils.AuthTokenManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import jakarta.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -37,7 +38,9 @@ data class TimelineUiState(
 
 @HiltViewModel
 class TimelineViewModel @Inject constructor(
-    savedStateHandle: SavedStateHandle
+    savedStateHandle: SavedStateHandle,
+    private val memoRepository: MemoRepository,
+    private val authTokenManager: AuthTokenManager
 ) : ViewModel() {
 
     private val timelineType: String? = savedStateHandle[NodalDestinations.Args.TYPE]
@@ -64,7 +67,7 @@ class TimelineViewModel @Inject constructor(
         } else if (targetUsername != null) {
             emit(targetUsername)
         } else {
-            NodalRepository.authState
+            authTokenManager.authStateFlow
                 .filterIsInstance<AuthState.Authenticated>()
                 .map { it.user.username }
                 .collect { emit(it) }
@@ -74,7 +77,7 @@ class TimelineViewModel @Inject constructor(
     @OptIn(ExperimentalCoroutinesApi::class)
     val uiState: StateFlow<TimelineUiState> = targetUserFlow
         .flatMapLatest { username ->
-            NodalRepository.getTimelineFlow(username).map { memos ->
+            memoRepository.getTimelineFlow(username).map { memos ->
                 username to memos
             }
         }
@@ -99,9 +102,9 @@ class TimelineViewModel @Inject constructor(
         viewModelScope.launch {
             targetUserFlow.collectLatest { user ->
                 // 只在没数据（首次打开）时才主动刷新
-                if (user == null && NodalRepository.exploreTimelineCursor == null) {
+                if (user == null && memoRepository.exploreTimelineCursor == null) {
                     internalLoadMemos(isRefresh = true, username = user)
-                } else if (user != null && NodalRepository.personalTimelineCursor[user] == null) {
+                } else if (user != null && memoRepository.personalTimelineCursor[user] == null) {
                     internalLoadMemos(isRefresh = true, username = user)
                 }
             }
@@ -129,7 +132,7 @@ class TimelineViewModel @Inject constructor(
             _error.value = null
 
             try {
-                val response = NodalRepository.fetchTimeline(
+                val response = memoRepository.fetchTimeline(
                     username = username,
                     isRefresh = isRefresh
                 )
@@ -150,7 +153,7 @@ class TimelineViewModel @Inject constructor(
     fun deleteMemo(id: String) {
         viewModelScope.launch {
             try {
-                NodalRepository.deleteMemo(id)
+                memoRepository.deleteMemo(id)
                 SnackbarManager.showMessage("删除成功")
             } catch (e: Exception) {
                 SnackbarManager.showMessage(e.message ?: "删除失败")

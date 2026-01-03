@@ -62,14 +62,14 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.roitium.nodal.ui.components.MemoCard
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PublishScreen(
-    viewModel: PublishViewModel = viewModel(),
+    viewModel: PublishViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit,
     animatedVisibilityScope: AnimatedVisibilityScope,
     sharedTransitionScope: SharedTransitionScope,

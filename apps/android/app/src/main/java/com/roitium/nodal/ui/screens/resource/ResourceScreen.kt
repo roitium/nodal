@@ -30,14 +30,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.roitium.nodal.utils.formatIsoDateToGroupHeader
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ResourceScreen(
-    viewModel: ResourceViewModel = viewModel(),
+    viewModel: ResourceViewModel = hiltViewModel(),
     onOpenDrawer: () -> Unit,
     onClickImage: (url: String?) -> Unit,
     onPushToMemoDetail: (id: String) -> Unit

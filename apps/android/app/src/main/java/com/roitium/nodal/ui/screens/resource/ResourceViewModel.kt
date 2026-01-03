@@ -6,11 +6,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.roitium.nodal.data.NodalRepository
 import com.roitium.nodal.data.models.Resource
+import com.roitium.nodal.data.repository.ResourceRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import jakarta.inject.Inject
 import kotlinx.coroutines.launch
 
-class ResourceViewModel : ViewModel() {
+@HiltViewModel
+class ResourceViewModel @Inject constructor(
+    private val resourceRepository: ResourceRepository
+) : ViewModel() {
     var resources by mutableStateOf<List<Resource>>(emptyList())
         private set
 
@@ -28,7 +33,7 @@ class ResourceViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 isLoading = true
-                val data = NodalRepository.getUserAllResources()
+                val data = resourceRepository.getUserAllResources()
                 resources = data
                 Log.d("ResourceScreen", data.size.toString())
             } catch (e: Exception) {

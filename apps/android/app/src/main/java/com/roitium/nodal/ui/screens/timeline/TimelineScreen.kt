@@ -38,15 +38,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.roitium.nodal.ui.components.MemoCard
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TimelineScreen(
-    viewModel: TimelineViewModel = viewModel(),
+    viewModel: TimelineViewModel = hiltViewModel(),
     onNavigateToPublish: (memoId: String?, replyToMemoId: String?) -> Unit,
     onOpenDrawer: () -> Unit,
     onClickImage: (url: String?) -> Unit,

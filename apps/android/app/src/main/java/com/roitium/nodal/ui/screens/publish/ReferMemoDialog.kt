@@ -28,58 +28,29 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.roitium.nodal.data.NodalRepository
 import com.roitium.nodal.data.models.Memo
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onStart
-
-sealed interface SearchUiState {
-    data object Loading : SearchUiState
-    data class Success(val data: List<Memo>, val matchedQuery: String) : SearchUiState
-    data class Error(val message: String?) : SearchUiState
-}
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalCoroutinesApi::class, FlowPreview::class)
 @Composable
 fun ReferMemoDialog(
+    viewModel: ReferMemoDialogViewModel = hiltViewModel(),
     showDialog: Boolean,
     onDismiss: () -> Unit,
     onSetReferredMemo: (Memo) -> Unit
 ) {
-    var text by remember { mutableStateOf("") }
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val text by viewModel.searchQuery.collectAsStateWithLifecycle()
     val keyboardController = LocalSoftwareKeyboardController.current
-    val uiState: SearchUiState by remember {
-        snapshotFlow { text }
-            .debounce(500)
-            .flatMapLatest { query ->
-                if (query.isBlank()) {
-                    flowOf(SearchUiState.Success(emptyList(), ""))
-                } else {
-                    NodalRepository.searchMemos(query)
-                        .map { list -> SearchUiState.Success(list, query) as SearchUiState }
-                        .onStart { emit(SearchUiState.Loading) }
-                        .catch { e -> emit(SearchUiState.Error(e.message)) }
-                }
-            }
-    }.collectAsStateWithLifecycle(initialValue = SearchUiState.Loading)
 
     if (showDialog) {
         BasicAlertDialog(
@@ -106,7 +77,7 @@ fun ReferMemoDialog(
                     )
                     OutlinedTextField(
                         value = text,
-                        onValueChange = { text = it },
+                        onValueChange = { viewModel.onSearchQueryChanged(it) },
                         modifier = Modifier
                             .padding(horizontal = 16.dp)
                             .fillMaxWidth(),
@@ -197,10 +168,4 @@ fun ReferMemoDialog(
             }
         }
     }
-}
-
-@Preview
-@Composable
-private fun ReferMemoDialogPreview() {
-    ReferMemoDialog(showDialog = true, onDismiss = {}, onSetReferredMemo = {})
 }

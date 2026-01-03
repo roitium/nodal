@@ -4,8 +4,8 @@ import SnackbarManager
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.roitium.nodal.data.NodalRepository
 import com.roitium.nodal.data.models.Memo
+import com.roitium.nodal.data.repository.MemoRepository
 import com.roitium.nodal.ui.navigation.NodalDestinations
 import dagger.hilt.android.lifecycle.HiltViewModel
 import jakarta.inject.Inject
@@ -28,7 +28,8 @@ sealed interface MemoDetailUiState {
 
 @HiltViewModel
 class MemoDetailViewModel @Inject constructor(
-    savedStateHandle: SavedStateHandle
+    savedStateHandle: SavedStateHandle,
+    private val memoRepository: MemoRepository
 ) : ViewModel() {
     private val memoId: String? = savedStateHandle[NodalDestinations.Args.MEMO_ID]
 
@@ -37,7 +38,7 @@ class MemoDetailViewModel @Inject constructor(
             emit(MemoDetailUiState.Error("Memo ID 为空"))
         } else {
             emitAll(
-                NodalRepository.getMemoDetail(memoId)
+                memoRepository.getMemoDetail(memoId)
                     .map { memo -> MemoDetailUiState.Success(memo) }
                     .catch { e -> emit(MemoDetailUiState.Error(e.message ?: "加载失败")) }
             )
@@ -54,7 +55,7 @@ class MemoDetailViewModel @Inject constructor(
         viewModelScope.launch {
             withContext(NonCancellable) {
                 try {
-                    NodalRepository.deleteMemo(memoId)
+                    memoRepository.deleteMemo(memoId)
                     SnackbarManager.showMessage("删除成功")
                     onDeleteSuccess()
                 } catch (e: Exception) {

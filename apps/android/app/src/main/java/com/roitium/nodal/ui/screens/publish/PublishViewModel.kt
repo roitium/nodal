@@ -10,10 +10,11 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.roitium.nodal.data.NodalRepository
 import com.roitium.nodal.data.models.Memo
 import com.roitium.nodal.data.models.PatchQuoteMemoField
 import com.roitium.nodal.data.models.Resource
+import com.roitium.nodal.data.repository.MemoRepository
+import com.roitium.nodal.data.repository.ResourceRepository
 import com.roitium.nodal.ui.navigation.NodalDestinations
 import dagger.hilt.android.lifecycle.HiltViewModel
 import jakarta.inject.Inject
@@ -48,7 +49,9 @@ sealed interface PublishUiEvent {
 
 @HiltViewModel
 class PublishViewModel @Inject constructor(
-    savedStateHandle: SavedStateHandle
+    savedStateHandle: SavedStateHandle,
+    private val memoRepository: MemoRepository,
+    private val resourceRepository: ResourceRepository
 ) : ViewModel() {
     var content by mutableStateOf("")
     var isPrivate by mutableStateOf(false)
@@ -92,7 +95,7 @@ class PublishViewModel @Inject constructor(
         viewModelScope.launch {
             isLoadingReplyMemo = true
             try {
-                val memo = NodalRepository.getMemoDetail(id).first()
+                val memo = memoRepository.getMemoDetail(id).first()
                 replyMemo = memo
             } catch (e: Exception) {
                 _uiEvent.send(PublishUiEvent.ShowMessage("加载回复的帖子: ${e.message}"))
@@ -107,7 +110,7 @@ class PublishViewModel @Inject constructor(
         viewModelScope.launch {
             isLoadingRawMemo = true
             try {
-                val memo = NodalRepository.getMemoDetail(id).first()
+                val memo = memoRepository.getMemoDetail(id).first()
 
                 content = memo.content
                 isPrivate = memo.visibility == "private"
@@ -155,8 +158,8 @@ class PublishViewModel @Inject constructor(
                 localItems.map { item ->
                     async {
                         try {
-                            val resource =
-                                NodalRepository.uploadFile(context, item.resource.uri)
+                            val resource = resourceRepository
+                                .uploadFile(context, item.resource.uri)
                             val index = resources.indexOf(item)
                             if (index != -1) {
                                 resources[index] = ResourceUnify.Remote(resource)
@@ -215,7 +218,7 @@ class PublishViewModel @Inject constructor(
                         if (referredMemo == null) PatchQuoteMemoField.Empty else PatchQuoteMemoField.Exist(
                             referredMemo!!
                         )
-                    NodalRepository.patchMemo(
+                    memoRepository.patchMemo(
                         id = realMemoId,
                         content = content,
                         visibility = if (isPrivate) "private" else "public",
@@ -235,7 +238,7 @@ class PublishViewModel @Inject constructor(
             viewModelScope.launch {
                 isPublishLoading = true
                 try {
-                    NodalRepository.publish(
+                    memoRepository.publish(
                         content = content,
                         visibility = if (isPrivate) "private" else "public",
                         resources = resourceIds,

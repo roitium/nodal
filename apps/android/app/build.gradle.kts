@@ -18,8 +18,8 @@ android {
         applicationId = "com.roitium.nodal"
         minSdk = 26
         targetSdk = 36
-        versionCode = 3
-        versionName = "1.2"
+        versionCode = 4
+        versionName = "1.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -52,6 +52,7 @@ android {
     kotlin {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_11)
+            freeCompilerArgs = listOf("-XXLanguage:+PropertyParamAnnotationDefaultTargetMode")
         }
     }
     buildFeatures {
@@ -96,10 +97,12 @@ dependencies {
     implementation(libs.splashscreen)
     implementation(libs.hilt.android)
     ksp(libs.hilt.android.compiler)
+    implementation(libs.bundles.room)
+    ksp(libs.androidx.room.compiler)
+    implementation(libs.androidx.hilt.navigation.compose)
+    implementation(libs.androidx.hilt.navigation.fragment)
 }
 
-configurations.all {
-    resolutionStrategy {
-//        force("com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava")
-    }
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
