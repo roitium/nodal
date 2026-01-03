@@ -19,10 +19,13 @@ export const users = pgTable('users', {
 	avatarUrl: text('avatar_url'),
 	bio: text('bio'),
 	isAdmin: boolean('is_admin').default(false),
-	createdAt: timestamp('created_at').defaultNow(),
-	updatedAt: timestamp('updated_at')
+	createdAt: timestamp('created_at', { mode: 'string', withTimezone: true })
 		.defaultNow()
-		.$onUpdate(() => new Date()),
+		.notNull(),
+	updatedAt: timestamp('updated_at', { mode: 'string', withTimezone: true })
+		.defaultNow()
+		.$onUpdate(() => sql`now()`)
+		.notNull(),
 })
 
 export const memos = pgTable(
@@ -32,11 +35,9 @@ export const memos = pgTable(
 
 		content: text('content').notNull(),
 
-		userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
-
-		// 允许用户匿名评论
-		guestName: text('guest_name'),
-		guestEmail: text('guest_email'),
+		userId: uuid('user_id')
+			.references(() => users.id, { onDelete: 'cascade' })
+			.notNull(),
 
 		parentId: uuid('parent_id'),
 		quoteId: uuid('quote_id'),
@@ -51,11 +52,13 @@ export const memos = pgTable(
 			.notNull(),
 		isPinned: boolean('is_pinned').default(false).notNull(),
 
-		createdAt: timestamp('created_at').defaultNow().notNull(),
-		updatedAt: timestamp('updated_at')
+		createdAt: timestamp('created_at', { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+		updatedAt: timestamp('updated_at', { withTimezone: true })
 			.defaultNow()
 			.notNull()
-			.$onUpdate(() => new Date()),
+			.$onUpdate(() => sql`now()`),
 	},
 	(table) => [
 		index('idx_memos_user').on(table.userId),

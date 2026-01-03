@@ -313,7 +313,7 @@ export const memosController = new Elysia({ prefix: '/memos', tags: ['memos'] })
 				quoteId: t.Optional(t.String({ format: 'uuid' })),
 				resources: t.Optional(t.Array(t.String({ format: 'uuid' }))),
 				isPinned: t.Optional(t.Boolean()),
-				createdAt: t.Optional(t.Number()),
+				createdAt: t.Optional(t.String({ format: 'date-time' })), // 允许用户修改 memos 发送时间，这会是一个好决定吗？
 				id: t.Optional(t.String({ format: 'uuid' })),
 			}),
 			detail: {
