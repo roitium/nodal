@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -212,28 +213,37 @@ fun PublishScreen(
                         .verticalScroll(scrollState)
                 ) {
                     if (viewModel.replyMemo != null) {
-                        MemoCard(
-                            memoEntity = viewModel.replyMemo?.memo!!,
-                            onlyShowContent = true, onClickImage = {},
-                            onDelete = {
-                            },
-                            onClickMemo = null,
-                            onClickReferredMemo = null,
-                            onClickEdit = {},
-                            onClickReply = {},
-                            animatedVisibilityScope = animatedVisibilityScope,
-                            sharedTransitionScope = sharedTransitionScope,
-                            imageSharedContentKeyPrefix = "do-not-use-it",
-                            memoReplies = emptyList(),
-                            quotedMemo = viewModel.replyMemo?.memo?.quotedMemo
-                        ) {}
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Column(
+                            modifier = Modifier
+                                .heightIn(max = 300.dp)
+                                .verticalScroll(rememberScrollState())
+                                .padding(horizontal = 16.dp)
+                        ) {
+                            MemoCard(
+                                memoEntity = viewModel.replyMemo?.memo!!,
+                                onlyShowContent = true, onClickImage = {},
+                                onDelete = {
+                                },
+                                onClickMemo = null,
+                                onClickReferredMemo = null,
+                                onClickEdit = {},
+                                onClickReply = {},
+                                animatedVisibilityScope = animatedVisibilityScope,
+                                sharedTransitionScope = sharedTransitionScope,
+                                imageSharedContentKeyPrefix = "do-not-use-it",
+                                memoReplies = emptyList(),
+                                quotedMemo = viewModel.replyMemo?.memo?.quotedMemo
+                            ) {}
+                            Spacer(modifier = Modifier.height(16.dp))
+                        }
                     }
                     OutlinedTextField(
                         value = viewModel.content,
                         onValueChange = viewModel::onContentChanged,
                         modifier = Modifier
                             .fillMaxWidth()
+                            .heightIn(min = 60.dp)
+                            .padding(16.dp)
                             .weight(1f),
                         placeholder = { Text("在想些什么？") },
                         colors = TextFieldDefaults.colors(
