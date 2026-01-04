@@ -129,6 +129,13 @@ export const memosController = new Elysia({ prefix: '/memos', tags: ['memos'] })
 					},
 					// 我们只提供第一级回复的信息
 					replies: {
+						extras: (replyTable, { sql }) => ({
+							subReplyCount: sql<number>`(
+                    SELECT count(*) 
+                    FROM ${memos} sub 
+                    WHERE sub.parent_id = ${replyTable.id}
+                )`.as('sub_reply_count'),
+						}),
 						with: {
 							author: {
 								columns: {
@@ -310,6 +317,13 @@ export const memosController = new Elysia({ prefix: '/memos', tags: ['memos'] })
 						},
 					},
 					replies: {
+						extras: (replyTable, { sql }) => ({
+							subReplyCount: sql<number>`(
+                    SELECT count(*) 
+                    FROM ${memos} sub 
+                    WHERE sub.parent_id = ${replyTable.id}
+                )`.as('sub_reply_count'),
+						}),
 						with: {
 							author: {
 								columns: {
@@ -387,6 +401,13 @@ export const memosController = new Elysia({ prefix: '/memos', tags: ['memos'] })
 						},
 					},
 					replies: {
+						extras: (replyTable, { sql }) => ({
+							subReplyCount: sql<number>`(
+                    SELECT count(*) 
+                    FROM ${memos} sub 
+                    WHERE sub.parent_id = ${replyTable.id}
+                )`.as('sub_reply_count'),
+						}),
 						with: {
 							author: {
 								columns: {
@@ -665,6 +686,13 @@ export const memosController = new Elysia({ prefix: '/memos', tags: ['memos'] })
 					},
 					// 我们只提供第一级回复的信息
 					replies: {
+						extras: (replyTable, { sql }) => ({
+							subReplyCount: sql<number>`(
+                    SELECT count(*) 
+                    FROM ${memos} sub 
+                    WHERE sub.parent_id = ${replyTable.id}
+                )`.as('sub_reply_count'),
+						}),
 						with: {
 							author: {
 								columns: {
