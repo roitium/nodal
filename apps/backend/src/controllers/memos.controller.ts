@@ -154,7 +154,7 @@ export const memosController = new Elysia({ prefix: '/memos', tags: ['memos'] })
 						data: items,
 						nextCursor: hasNextPage
 							? {
-									createdAt: items[items.length - 1]?.createdAt?.getTime() ?? 0,
+									createdAt: items[items.length - 1]?.createdAt ?? '',
 									id: items[items.length - 1]?.id ?? '',
 								}
 							: null,
@@ -166,7 +166,7 @@ export const memosController = new Elysia({ prefix: '/memos', tags: ['memos'] })
 		{
 			query: t.Object({
 				limit: t.Optional(t.String()),
-				cursorCreatedAt: t.Optional(t.Number()),
+				cursorCreatedAt: t.Optional(t.String({ format: 'date-time' })),
 				cursorId: t.Optional(t.String({ format: 'uuid' })),
 				username: t.Optional(t.String()),
 			}),
