@@ -563,7 +563,7 @@ export const memosController = new Elysia({ prefix: '/memos', tags: ['memos'] })
 				content: t.Optional(t.String()),
 				resources: t.Optional(t.Array(t.String({ format: 'uuid' }))),
 				quoteId: t.Optional(t.Nullable(t.String({ format: 'uuid' }))),
-				createdAt: t.Optional(t.Number()),
+				createdAt: t.Optional(t.String({ format: 'date-time' })),
 			}),
 		},
 	)
