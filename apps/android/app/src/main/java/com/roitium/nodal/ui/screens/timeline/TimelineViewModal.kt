@@ -1,13 +1,14 @@
 package com.roitium.nodal.ui.screens.timeline
 
 import SnackbarManager
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.roitium.nodal.data.models.Memo
+import com.roitium.nodal.data.local.relation.MemoPopulated
 import com.roitium.nodal.data.repository.MemoRepository
 import com.roitium.nodal.ui.navigation.NodalDestinations
 import com.roitium.nodal.utils.AuthState
@@ -19,17 +20,17 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 data class TimelineUiState(
-    val memos: List<Memo> = emptyList(),
+    val memos: List<MemoPopulated> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
     val currentUsername: String? = null,
@@ -77,7 +78,11 @@ class TimelineViewModel @Inject constructor(
     @OptIn(ExperimentalCoroutinesApi::class)
     val uiState: StateFlow<TimelineUiState> = targetUserFlow
         .flatMapLatest { username ->
-            memoRepository.getTimelineFlow(username).map { memos ->
+            memoRepository.getTimelineFlow(username).onEach { memos ->
+                if (memos.isEmpty() && !memoRepository.hasSynced(username) && !_isLoading.value) {
+                    internalLoadMemos(isRefresh = true, username = username)
+                }
+            }.map { memos ->
                 username to memos
             }
         }
@@ -97,19 +102,6 @@ class TimelineViewModel @Inject constructor(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = TimelineUiState(isLoading = true)
         )
-
-    init {
-        viewModelScope.launch {
-            targetUserFlow.collectLatest { user ->
-                // 只在没数据（首次打开）时才主动刷新
-                if (user == null && memoRepository.exploreTimelineCursor == null) {
-                    internalLoadMemos(isRefresh = true, username = user)
-                } else if (user != null && memoRepository.personalTimelineCursor[user] == null) {
-                    internalLoadMemos(isRefresh = true, username = user)
-                }
-            }
-        }
-    }
 
     fun loadMore() {
         val currentUser = uiState.value.currentUsername
@@ -144,6 +136,7 @@ class TimelineViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 _error.value = e.message ?: "加载失败"
+                Log.d("quoteMemo", e.toString())
             } finally {
                 _isLoading.value = false
             }

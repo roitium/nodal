@@ -142,30 +142,32 @@ fun TimelineScreen(
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        items(uiState.memos, key = { memo -> memo.id }) { memo ->
+                        items(uiState.memos, key = { memo -> memo.memo.id }) { memo ->
                             with(sharedTransitionScope) {
                                 MemoCard(
-                                    memo, onClickImage = onClickImage, onDelete = { id ->
+                                    memo.memo, modifier = Modifier.sharedBounds(
+                                        sharedContentState = rememberSharedContentState(
+                                            key = "memo-card-${memo.memo.id}"
+                                        ),
+                                        animatedVisibilityScope = animatedVisibilityScope,
+                                        resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds
+                                    ), onClickImage = onClickImage, onDelete = { id ->
                                         viewModel.deleteMemo(id)
-                                    }, onClickMemo = onNavigateToMemoDetail,
+                                    },
+                                    onClickMemo = onNavigateToMemoDetail,
                                     onClickReferredMemo = onNavigateToMemoDetail,
                                     onClickEdit = { id ->
                                         onNavigateToPublish(id, null)
                                     },
-                                    animatedVisibilityScope = animatedVisibilityScope,
-                                    sharedTransitionScope = sharedTransitionScope,
                                     onClickReply = { id ->
                                         onNavigateToPublish(null, id)
                                     },
-                                    containerModifier = Modifier.sharedBounds(
-                                        sharedContentState = rememberSharedContentState(
-                                            key = "memo-card-${memo.id}"
-                                        ),
-                                        animatedVisibilityScope = animatedVisibilityScope,
-                                        resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds
-                                    ),
+                                    animatedVisibilityScope = animatedVisibilityScope,
+                                    sharedTransitionScope = sharedTransitionScope,
                                     imageSharedContentKeyPrefix = "timeline-page-image",
-                                    onClickAvatar = onNavigateToTimeline
+                                    onClickAvatar = onNavigateToTimeline,
+                                    memoReplies = memo.replies,
+                                    quotedMemo = memo.memo.quotedMemo
                                 )
                             }
                         }

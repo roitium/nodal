@@ -1,6 +1,6 @@
 package com.roitium.nodal.data.api
 
-import com.roitium.nodal.data.models.Memo
+import com.roitium.nodal.data.models.ApiMemo
 import com.roitium.nodal.data.models.PublishRequest
 import com.roitium.nodal.data.models.Response
 import com.roitium.nodal.data.models.TimelineResponse
@@ -17,13 +17,13 @@ interface NodalMemoApi {
     @GET("/api/v1/memos/timeline")
     suspend fun getTimeline(
         @Query("limit") limit: Int? = 5,
-        @Query("cursorCreatedAt") cursorCreatedAt: Long? = null,
+        @Query("cursorCreatedAt") cursorCreatedAt: String? = null,
         @Query("cursorId") cursorId: String? = null,
         @Query("username") username: String? = null
     ): Response<TimelineResponse>
 
     @POST("/api/v1/memos/publish")
-    suspend fun publish(@Body request: PublishRequest): Response<Memo>
+    suspend fun publish(@Body request: PublishRequest): Response<ApiMemo>
 
     @DELETE("/api/v1/memos/{memoId}")
     suspend fun deleteMemo(@Path("memoId") memoId: String): Response<Boolean>
@@ -35,8 +35,8 @@ interface NodalMemoApi {
     ): Response<Boolean>
 
     @GET("/api/v1/memos/{memoId}")
-    suspend fun getMemoDetail(@Path("memoId") memoId: String): Response<Memo>
+    suspend fun getMemoDetail(@Path("memoId") memoId: String): Response<ApiMemo>
 
     @GET("/api/v1/memos/search")
-    suspend fun searchMemos(@Query("keyword") keyword: String): Response<List<Memo>>
+    suspend fun searchMemos(@Query("keyword") keyword: String): Response<List<ApiMemo>>
 }

@@ -4,7 +4,7 @@ import SnackbarManager
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.roitium.nodal.data.models.Memo
+import com.roitium.nodal.data.local.relation.MemoPopulated
 import com.roitium.nodal.data.repository.MemoRepository
 import com.roitium.nodal.ui.navigation.NodalDestinations
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -22,7 +22,9 @@ import kotlinx.coroutines.withContext
 
 sealed interface MemoDetailUiState {
     data object Loading : MemoDetailUiState
-    data class Success(val memo: Memo) : MemoDetailUiState
+    data class Success(val memo: MemoPopulated) :
+        MemoDetailUiState
+
     data class Error(val message: String) : MemoDetailUiState
 }
 
@@ -38,8 +40,8 @@ class MemoDetailViewModel @Inject constructor(
             emit(MemoDetailUiState.Error("Memo ID 为空"))
         } else {
             emitAll(
-                memoRepository.getMemoDetail(memoId)
-                    .map { memo -> MemoDetailUiState.Success(memo) }
+                memoRepository.getMemoDetailFlow(memoId)
+                    .map { memo -> if (memo != null) MemoDetailUiState.Success(memo) else MemoDetailUiState.Loading }
                     .catch { e -> emit(MemoDetailUiState.Error(e.message ?: "加载失败")) }
             )
         }
@@ -48,6 +50,14 @@ class MemoDetailViewModel @Inject constructor(
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = MemoDetailUiState.Loading
     )
+
+    init {
+        viewModelScope.launch {
+            if (memoId != null) {
+                memoRepository.refreshMemoDetail(memoId)
+            }
+        }
+    }
 
     fun deleteMemo(onDeleteSuccess: () -> Unit) {
         if (memoId == null) return

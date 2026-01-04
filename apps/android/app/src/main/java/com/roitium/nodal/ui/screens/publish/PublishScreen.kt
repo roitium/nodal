@@ -213,19 +213,20 @@ fun PublishScreen(
                 ) {
                     if (viewModel.replyMemo != null) {
                         MemoCard(
-                            memo = viewModel.replyMemo!!.copy(replies = emptyList()),
-                            onClickImage = {}, onDelete = {
+                            memoEntity = viewModel.replyMemo?.memo!!,
+                            onlyShowContent = true, onClickImage = {},
+                            onDelete = {
                             },
-                            onClickEdit = {},
-                            animatedVisibilityScope = animatedVisibilityScope,
-                            sharedTransitionScope = sharedTransitionScope,
-                            onClickReply = {},
-                            onlyShowContent = true,
                             onClickMemo = null,
                             onClickReferredMemo = null,
+                            onClickEdit = {},
+                            onClickReply = {},
+                            animatedVisibilityScope = animatedVisibilityScope,
+                            sharedTransitionScope = sharedTransitionScope,
                             imageSharedContentKeyPrefix = "do-not-use-it",
-                            onClickAvatar = {}
-                        )
+                            memoReplies = emptyList(),
+                            quotedMemo = viewModel.replyMemo?.memo?.quotedMemo
+                        ) {}
                         Spacer(modifier = Modifier.height(16.dp))
                     }
                     OutlinedTextField(

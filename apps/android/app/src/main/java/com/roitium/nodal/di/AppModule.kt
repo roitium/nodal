@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.roitium.nodal.data.local.AppDatabase
 import com.roitium.nodal.data.local.dao.MemoDao
+import com.roitium.nodal.data.local.dao.RemoteCursorDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -31,6 +32,11 @@ object AppModule {
     @Provides
     fun provideMemoDao(database: AppDatabase): MemoDao {
         return database.memoDao()
+    }
+
+    @Provides
+    fun provideRemoteCursorDao(database: AppDatabase): RemoteCursorDao {
+        return database.remoteCursorDao()
     }
 
     @Retention(AnnotationRetention.RUNTIME)

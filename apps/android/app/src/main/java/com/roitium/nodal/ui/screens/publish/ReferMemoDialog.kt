@@ -36,7 +36,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.roitium.nodal.data.models.Memo
+import com.roitium.nodal.data.local.entity.MemoEntity
+import com.roitium.nodal.data.local.entity.toSingleEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 
@@ -46,7 +47,7 @@ fun ReferMemoDialog(
     viewModel: ReferMemoDialogViewModel = hiltViewModel(),
     showDialog: Boolean,
     onDismiss: () -> Unit,
-    onSetReferredMemo: (Memo) -> Unit
+    onSetReferredMemo: (MemoEntity) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val text by viewModel.searchQuery.collectAsStateWithLifecycle()
@@ -138,7 +139,7 @@ fun ReferMemoDialog(
                                             ),
                                             modifier = Modifier
                                                 .clickable {
-                                                    onSetReferredMemo(memo)
+                                                    onSetReferredMemo(memo.toSingleEntity())
                                                     keyboardController?.hide()
                                                     onDismiss()
                                                 }

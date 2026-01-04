@@ -2,7 +2,7 @@ package com.roitium.nodal.ui.screens.publish
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.roitium.nodal.data.models.Memo
+import com.roitium.nodal.data.models.ApiMemo
 import com.roitium.nodal.data.repository.MemoRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -21,7 +21,7 @@ import javax.inject.Inject
 
 sealed interface SearchUiState {
     data object Loading : SearchUiState
-    data class Success(val data: List<Memo>, val matchedQuery: String) : SearchUiState
+    data class Success(val data: List<ApiMemo>, val matchedQuery: String) : SearchUiState
     data class Error(val message: String?) : SearchUiState
 }
 

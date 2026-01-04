@@ -95,9 +95,7 @@ fun MemoDetailScreen(
                                 with(sharedTransitionScope) {
                                     MemoCard(
                                         // 这里我们直接把 replies 列表覆盖为空，避免显示 tip
-                                        memo = (uiState as MemoDetailUiState.Success).memo.copy(
-                                            replies = emptyList()
-                                        ),
+                                        memoEntity = (uiState as MemoDetailUiState.Success).memo.memo,
                                         onClickImage = onClickImage,
                                         onDelete = {
                                             viewModel.deleteMemo({
@@ -116,15 +114,17 @@ fun MemoDetailScreen(
                                         onClickReply = { id ->
                                             onNavigateToPublish(null, id)
                                         },
-                                        containerModifier = Modifier.sharedBounds(
+                                        modifier = Modifier.sharedBounds(
                                             sharedContentState = rememberSharedContentState(
-                                                key = "memo-card-${(uiState as MemoDetailUiState.Success).memo.id}"
+                                                key = "memo-card-${(uiState as MemoDetailUiState.Success).memo.memo.id}"
                                             ),
                                             animatedVisibilityScope = animatedVisibilityScope,
                                             resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds
                                         ),
                                         imageSharedContentKeyPrefix = "detail-page-image",
-                                        onClickAvatar = onNavigateToTimeline
+                                        onClickAvatar = onNavigateToTimeline,
+                                        memoReplies = emptyList(),
+                                        quotedMemo = (uiState as MemoDetailUiState.Success).memo.memo.quotedMemo
                                     )
                                 }
                             }
@@ -139,7 +139,16 @@ fun MemoDetailScreen(
                                     key = { index, item -> item.id }) { index, item ->
                                     with(sharedTransitionScope) {
                                         MemoCard(
-                                            item, onClickImage = onClickImage,
+                                            item, modifier = Modifier.sharedBounds(
+                                                sharedContentState = rememberSharedContentState(
+                                                    key = "memo-card-${item.id}"
+                                                ),
+                                                animatedVisibilityScope = animatedVisibilityScope,
+                                                resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds
+                                            ),
+                                            containerColor = MaterialTheme.colorScheme.surface,
+                                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                                            onClickImage = onClickImage,
                                             onDelete = { id ->
                                                 viewModel.deleteMemo {
                                                 }
@@ -149,22 +158,15 @@ fun MemoDetailScreen(
                                             onClickEdit = { id ->
                                                 onNavigateToPublish(id, null)
                                             },
-                                            animatedVisibilityScope = animatedVisibilityScope,
-                                            sharedTransitionScope = sharedTransitionScope,
                                             onClickReply = { id ->
                                                 onNavigateToPublish(null, id)
                                             },
-                                            containerColor = MaterialTheme.colorScheme.surface,
-                                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                                            containerModifier = Modifier.sharedBounds(
-                                                sharedContentState = rememberSharedContentState(
-                                                    key = "memo-card-${item.id}"
-                                                ),
-                                                animatedVisibilityScope = animatedVisibilityScope,
-                                                resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds
-                                            ),
+                                            animatedVisibilityScope = animatedVisibilityScope,
+                                            sharedTransitionScope = sharedTransitionScope,
                                             imageSharedContentKeyPrefix = "detail-page-image",
-                                            onClickAvatar = onNavigateToTimeline
+                                            onClickAvatar = onNavigateToTimeline,
+                                            memoReplies = emptyList(),
+                                            quotedMemo = null
                                         )
                                     }
                                     if (index < (uiState as MemoDetailUiState.Success).memo.replies.lastIndex) {

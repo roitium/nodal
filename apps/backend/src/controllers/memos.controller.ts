@@ -104,7 +104,18 @@ export const memosController = new Elysia({ prefix: '/memos', tags: ['memos'] })
 							createdAt: true,
 						},
 					},
-					quotedMemo: true,
+					quotedMemo: {
+						with: {
+							author: {
+								columns: {
+									id: true,
+									username: true,
+									displayName: true,
+									avatarUrl: true,
+								},
+							},
+						},
+					},
 					resources: {
 						columns: {
 							id: true,
@@ -275,7 +286,18 @@ export const memosController = new Elysia({ prefix: '/memos', tags: ['memos'] })
 							createdAt: true,
 						},
 					},
-					quotedMemo: true,
+					quotedMemo: {
+						with: {
+							author: {
+								columns: {
+									id: true,
+									username: true,
+									displayName: true,
+									avatarUrl: true,
+								},
+							},
+						},
+					},
 					resources: {
 						columns: {
 							id: true,
@@ -341,7 +363,18 @@ export const memosController = new Elysia({ prefix: '/memos', tags: ['memos'] })
 							createdAt: true,
 						},
 					},
-					quotedMemo: true,
+					quotedMemo: {
+						with: {
+							author: {
+								columns: {
+									id: true,
+									username: true,
+									displayName: true,
+									avatarUrl: true,
+								},
+							},
+						},
+					},
 					resources: {
 						columns: {
 							id: true,
@@ -607,7 +640,18 @@ export const memosController = new Elysia({ prefix: '/memos', tags: ['memos'] })
 							createdAt: true,
 						},
 					},
-					quotedMemo: true,
+					quotedMemo: {
+						with: {
+							author: {
+								columns: {
+									id: true,
+									username: true,
+									displayName: true,
+									avatarUrl: true,
+								},
+							},
+						},
+					},
 					resources: {
 						columns: {
 							id: true,

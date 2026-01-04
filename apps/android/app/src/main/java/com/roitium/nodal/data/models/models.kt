@@ -1,5 +1,6 @@
 package com.roitium.nodal.data.models
 
+import com.roitium.nodal.data.local.entity.MemoEntity
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -37,17 +38,33 @@ data class User(
 )
 
 @Serializable
-data class Memo(
+data class ApiMemo(
     val id: String,
     val content: String,
     val userId: String,
     val visibility: String = "public",
     val isPinned: Boolean = false,
     val createdAt: String,
-    val author: User? = null,
+    val author: User,
     val resources: List<Resource> = emptyList(),
-    val replies: List<Memo> = emptyList(),
-    val quotedMemo: Memo? = null
+    val replies: List<ApiMemo> = emptyList(),
+    val quotedMemo: ApiQuotedMemo? = null,
+    val updatedAt: String,
+    val parentId: String?
+)
+
+@Serializable
+data class ApiQuotedMemo(
+    val id: String,
+    val content: String,
+    val userId: String,
+    val visibility: String = "public",
+    val isPinned: Boolean = false,
+    val createdAt: String,
+    val author: User,
+    val updatedAt: String,
+    val parentId: String?,
+    val quoteId: String?
 )
 
 @Serializable
@@ -87,18 +104,19 @@ data class PublishRequest(
     val parentId: String? = null,
     val quoteId: String? = null,
     val isPinned: Boolean = false,
-    val resources: List<String> = emptyList()
+    val resources: List<String> = emptyList(),
+    val id: String? = null
 )
 
 @Serializable
 data class TimelineResponse(
-    val data: List<Memo>,
+    val data: List<ApiMemo>,
     val nextCursor: Cursor? = null
 )
 
 @Serializable
 data class Cursor(
-    val createdAt: Long,
+    val createdAt: String,
     val id: String
 )
 
@@ -121,5 +139,5 @@ data class RecordUploadRequest(
 
 sealed interface PatchQuoteMemoField {
     data object Empty : PatchQuoteMemoField
-    data class Exist(val memo: Memo) : PatchQuoteMemoField
+    data class Exist(val memo: MemoEntity) : PatchQuoteMemoField
 }

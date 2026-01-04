@@ -23,11 +23,13 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Public
+import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.RemoveRedEye
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CardElevation
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -42,6 +44,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -56,15 +59,18 @@ import com.mikepenz.markdown.compose.components.markdownComponents
 import com.mikepenz.markdown.compose.elements.highlightedCodeBlock
 import com.mikepenz.markdown.compose.elements.highlightedCodeFence
 import com.mikepenz.markdown.m3.Markdown
-import com.roitium.nodal.data.models.Memo
+import com.roitium.nodal.data.local.entity.MemoEntity
+import com.roitium.nodal.data.local.entity.SyncStatus
 import java.time.Instant
 
 @Composable
 fun MemoCard(
-    memo: Memo,
+    memoEntity: MemoEntity,
+    memoReplies: List<MemoEntity>,
+    quotedMemo: MemoEntity?,
+    modifier: Modifier = Modifier,
     containerColor: Color = MaterialTheme.colorScheme.surfaceContainer,
     elevation: CardElevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-    containerModifier: Modifier = Modifier,
     onlyShowContent: Boolean = false,
     onClickImage: (url: String?) -> Unit,
     onDelete: (id: String) -> Unit,
@@ -81,11 +87,18 @@ fun MemoCard(
     var expandedDropdownMenu by remember { mutableStateOf(false) }
 
     Card(
-        modifier = containerModifier
+        modifier = modifier
             .fillMaxWidth()
             .then(
                 if (onClickMemo != null) {
-                    Modifier.clickable { onClickMemo(memo.id) }
+                    Modifier.clickable { onClickMemo(memoEntity.id) }
+                } else {
+                    Modifier
+                }
+            )
+            .then(
+                if (memoEntity.status != SyncStatus.SYNCED) {
+                    Modifier.alpha(0.5f)
                 } else {
                     Modifier
                 }
@@ -101,7 +114,7 @@ fun MemoCard(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
-                        .data(memo.author?.avatarUrl)
+                        .data(memoEntity.author?.avatarUrl)
                         .diskCachePolicy(CachePolicy.ENABLED)
                         .memoryCachePolicy(CachePolicy.ENABLED)
                         .build(),
@@ -110,7 +123,7 @@ fun MemoCard(
                         .size(40.dp)
                         .clip(CircleShape)
                         .clickable {
-                            onClickAvatar(memo.author?.username ?: "")
+                            onClickAvatar(memoEntity.author?.username ?: "")
                         },
                     contentScale = ContentScale.Crop,
                 )
@@ -118,11 +131,13 @@ fun MemoCard(
                 Column(modifier = Modifier.weight(1f)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = memo.author?.displayName ?: memo.author?.username ?: "Unknown",
+                            text = memoEntity.author?.displayName
+                                ?: memoEntity.author?.username
+                                ?: "Unknown",
                             style = MaterialTheme.typography.titleMedium
                         )
                         Spacer(modifier = Modifier.width(4.dp))
-                        if (memo.visibility == "public") {
+                        if (memoEntity.visibility == "public") {
                             Icon(
                                 Icons.Default.Public,
                                 contentDescription = "public",
@@ -135,10 +150,22 @@ fun MemoCard(
                                 modifier = Modifier.size(16.dp)
                             )
                         }
+                        if (memoEntity.isPinned) {
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Icon(
+                                Icons.Default.PushPin,
+                                contentDescription = "pinned",
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                        if (memoEntity.status != SyncStatus.SYNCED) {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            CircularProgressIndicator(modifier = Modifier.size(16.dp))
+                        }
                     }
                     Text(
                         text = DateUtils.getRelativeTimeSpanString(
-                            Instant.parse(memo.createdAt).toEpochMilli(),
+                            Instant.parse(memoEntity.createdAt).toEpochMilli(),
                             System.currentTimeMillis(),
                             DateUtils.MINUTE_IN_MILLIS,
                             DateUtils.FORMAT_ABBREV_RELATIVE
@@ -148,7 +175,7 @@ fun MemoCard(
                     )
                 }
                 if (!onlyShowContent) {
-                    IconButton(onClick = { onClickReply(memo.id) }) {
+                    IconButton(onClick = { onClickReply(memoEntity.id) }) {
                         Icon(
                             Icons.AutoMirrored.Filled.Comment,
                             contentDescription = "reply this memo",
@@ -167,7 +194,7 @@ fun MemoCard(
                                     )
                                 }, onClick = {
                                     expandedDropdownMenu = false
-                                    onClickEdit(memo.id)
+                                    onClickEdit(memoEntity.id)
                                 },
                                 leadingIcon = {
                                     Icon(
@@ -199,14 +226,14 @@ fun MemoCard(
             }
             Spacer(modifier = Modifier.height(8.dp))
             Markdown(
-                memo.content.trimIndent(),
+                memoEntity.content.trimIndent(),
                 imageTransformer = Coil2ImageTransformerImpl,
                 components = markdownComponents(
                     codeBlock = highlightedCodeBlock,
                     codeFence = highlightedCodeFence,
                 )
             )
-            if (memo.resources.isNotEmpty()) {
+            if (memoEntity.resources.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(16.dp))
                 FlowRow(
                     modifier = Modifier.fillMaxWidth(),
@@ -214,7 +241,7 @@ fun MemoCard(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     maxItemsInEachRow = 3
                 ) {
-                    memo.resources.forEach { resource ->
+                    memoEntity.resources.forEach { resource ->
                         with(sharedTransitionScope) {
                             AsyncImage(
                                 model = ImageRequest.Builder(LocalContext.current)
@@ -240,14 +267,14 @@ fun MemoCard(
                 }
 
             }
-            if (memo.quotedMemo != null) {
+            if (quotedMemo != null) {
                 Spacer(modifier = Modifier.height(16.dp))
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
                         .then(
                             if (onClickReferredMemo != null) {
-                                Modifier.clickable { onClickReferredMemo(memo.quotedMemo.id) }
+                                Modifier.clickable { onClickReferredMemo(quotedMemo.id) }
                             } else {
                                 Modifier
                             }
@@ -258,7 +285,7 @@ fun MemoCard(
                         modifier = Modifier.padding(16.dp)
                     ) {
                         Text(
-                            text = memo.quotedMemo.content,
+                            text = quotedMemo.content,
                             style = MaterialTheme.typography.bodyMedium,
                             maxLines = 5,
                             overflow = TextOverflow.Ellipsis
@@ -267,14 +294,14 @@ fun MemoCard(
 
                 }
             }
-            if (memo.replies.isNotEmpty()) {
+            if (memoReplies.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(16.dp))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Spacer(modifier = Modifier.weight(1f))
                     Text(
-                        "查看 ${memo.replies.size} 条回复",
+                        "查看 ${memoReplies.size} 条回复",
                         style = MaterialTheme.typography.labelMedium
                     )
                     Icon(
@@ -294,7 +321,7 @@ fun MemoCard(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        onDelete(memo.id)
+                        onDelete(memoEntity.id)
                         showDeleteDialog = false
                     }
                 ) {

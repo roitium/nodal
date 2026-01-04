@@ -1,6 +1,7 @@
 package com.roitium.nodal
 
 import SnackbarManager
+import android.annotation.SuppressLint
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -65,6 +66,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun NodalApp(mainViewModel: MainViewModel = hiltViewModel()) {
     val navController = rememberNavController()

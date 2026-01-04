@@ -1,88 +1,96 @@
 package com.roitium.nodal.data.repository
 
+import androidx.room.withTransaction
 import com.roitium.nodal.data.api.NodalMemoApi
+import com.roitium.nodal.data.local.AppDatabase
 import com.roitium.nodal.data.local.dao.MemoDao
+import com.roitium.nodal.data.local.dao.RemoteCursorDao
+import com.roitium.nodal.data.local.entity.MemoEntity
+import com.roitium.nodal.data.local.entity.RemoteCursorEntity
+import com.roitium.nodal.data.local.entity.SyncStatus
+import com.roitium.nodal.data.local.entity.toFlattenEntityList
+import com.roitium.nodal.data.local.relation.MemoPopulated
+import com.roitium.nodal.data.models.ApiMemo
 import com.roitium.nodal.data.models.ApiResult
-import com.roitium.nodal.data.models.Cursor
-import com.roitium.nodal.data.models.Memo
 import com.roitium.nodal.data.models.PatchQuoteMemoField
 import com.roitium.nodal.data.models.PublishRequest
 import com.roitium.nodal.data.models.Resource
 import com.roitium.nodal.data.models.TimelineResponse
 import com.roitium.nodal.exceptions.BusinessException
+import com.roitium.nodal.exceptions.NotLoginException
+import com.roitium.nodal.utils.AuthState
+import com.roitium.nodal.utils.AuthTokenManager
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.update
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
-import kotlin.time.Instant
+import kotlin.time.Clock
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 @Singleton
 class MemoRepository @Inject constructor(
-    private val dao: MemoDao,
-    private val memoApi: NodalMemoApi
+    private val memoDao: MemoDao,
+    private val memoApi: NodalMemoApi,
+    private val authTokenManager: AuthTokenManager,
+    private val remoteCursorDao: RemoteCursorDao,
+    private val appDatabase: AppDatabase
 ) {
-    private val _memoEntities = MutableStateFlow<Map<String, Memo>>(emptyMap())
-    private val _personalTimeline = MutableStateFlow<Map<String, List<String>>>(emptyMap())
-    private val _exploreTimeline = MutableStateFlow<List<String>>(emptyList())
-
-    var exploreTimelineCursor: Cursor? = null
-    var personalTimelineCursor: MutableMap<String, Cursor?> = mutableMapOf()
-
-    private fun updateEntities(memos: List<Memo>) {
-        _memoEntities.update { current -> current + memos.associateBy { it.id } }
+    fun getTimelineFlow(username: String?): Flow<List<MemoPopulated>> {
+        return if (username == null) memoDao.getExploreTimeline() else memoDao.getPersonalTimeline(
+            username
+        )
     }
 
-    fun getTimelineFlow(username: String?): Flow<List<Memo>> {
-        if (username == null) {
-            return _exploreTimeline.combine(_memoEntities) { ids, entities ->
-                ids.mapNotNull { entities[it] }
-            }
-        }
-        return _personalTimeline.map { it[username] ?: emptyList() }
-            .combine(_memoEntities) { ids, entities ->
-                ids.mapNotNull { entities[it] }
-            }
-    }
+    fun getMemoDetailFlow(id: String): Flow<MemoPopulated?> = memoDao.getMemoById(id)
 
+    /**
+     * username 和 userId 必须要同时提供
+     */
     suspend fun fetchTimeline(username: String? = null, isRefresh: Boolean): TimelineResponse {
-        var cursor: Cursor? = if (!isRefresh) {
-            if (username == null) exploreTimelineCursor else personalTimelineCursor[username]
-        } else null
+        val remoteKeyId = if (username == null) "explore" else "personal-$username"
+
+        val (cursorId, cursorTime) = if (isRefresh) {
+            null to null
+        } else {
+            val remoteKey = remoteCursorDao.getRemoteCursor(remoteKeyId)
+            remoteKey?.nextCursorId to remoteKey?.nextCursorTime
+        }
 
         val response = memoApi.getTimeline(
             limit = 20,
             username = username,
-            cursorId = cursor?.id,
-            cursorCreatedAt = cursor?.createdAt
+            cursorId = cursorId,
+            cursorCreatedAt = cursorTime
         )
-
         return when (val result = response.toApiResult()) {
             is ApiResult.Success -> {
-                val newList = result.data.data
-                updateEntities(newList)
-                if (username == null) {
-                    _exploreTimeline.update { currentList ->
-                        val oldIds = if (cursor == null) emptyList() else currentList
-                        (oldIds + newList.map { it.id }).distinct()
+                val data = result.data
+                appDatabase.withTransaction {
+                    if (isRefresh) {
+                        if (username == null) memoDao.clearExploreTimelineCache()
+                        else memoDao.clearPersonalTimelineCache(username)
+
+                        remoteCursorDao.deleteRemoteCursor(remoteKeyId)
                     }
-                    exploreTimelineCursor = result.data.nextCursor
-                } else {
-                    _personalTimeline.update { currentMap ->
-                        val oldIds =
-                            if (cursor == null) emptyList() else currentMap[username] ?: emptyList()
-                        currentMap + (username to (oldIds + newList.map { it.id }).distinct())
+                    memoDao.saveSyncMemos(data.data.flatMap { it.toFlattenEntityList() })
+
+                    if (data.nextCursor != null) {
+                        remoteCursorDao.insertOrReplace(
+                            RemoteCursorEntity(
+                                id = remoteKeyId,
+                                nextCursorId = data.nextCursor.id,
+                                nextCursorTime = data.nextCursor.createdAt
+                            )
+                        )
                     }
-                    personalTimelineCursor[username] = result.data.nextCursor
                 }
-                result.data
+                data
             }
 
             is ApiResult.Failure -> throw BusinessException(
@@ -93,57 +101,98 @@ class MemoRepository @Inject constructor(
         }
     }
 
+    @OptIn(ExperimentalUuidApi::class)
     suspend fun publish(
         content: String,
         visibility: String = "public",
-        resources: List<String> = emptyList(),
-        referredMemoId: String? = null,
-        replyMemo: Memo?
-    ): Memo {
+        resources: List<Resource> = emptyList(),
+        referredMemo: MemoEntity? = null,
+        replyMemo: MemoEntity?,
+        isPinned: Boolean = false
+    ): ApiMemo {
+        val memoId = Uuid.generateV7().toString()
+        val now = Clock.System.now().toString()
+        val auth = authTokenManager.authStateFlow.first()
+
+        if (auth !is AuthState.Authenticated) {
+            throw NotLoginException("请先登录")
+        }
+
+        val tempEntity = MemoEntity(
+            id = memoId,
+            content = content,
+            authorUsername = auth.user.username,
+            author = auth.user,
+            parentId = replyMemo?.id,
+            quotedMemo = referredMemo,
+            visibility = visibility,
+            createdAt = now,
+            resources = resources,
+            status = SyncStatus.PENDING_CREATE,
+            updatedAt = now,
+            isPinned = isPinned
+        )
+
+        memoDao.smartCreate(tempEntity)
+
         val response = memoApi.publish(
             PublishRequest(
                 content = content,
                 visibility = visibility,
-                resources = resources,
-                quoteId = referredMemoId,
-                parentId = replyMemo?.id
+                resources = resources.map { it.id },
+                quoteId = referredMemo?.id,
+                parentId = replyMemo?.id,
+                isPinned = isPinned,
+                id = memoId
             )
         )
-        return when (val result = response.toApiResult()) {
-            is ApiResult.Failure -> throw BusinessException(
-                result.code,
-                result.errorMessage,
-                result.traceId
-            )
 
+        return when (val result = response.toApiResult()) {
             is ApiResult.Success -> {
-                val newMemo = result.data
-                updateEntities(listOf(newMemo))
-                _exploreTimeline.update { listOf(newMemo.id) + it }
-                newMemo.author?.username?.let { name ->
-                    _personalTimeline.update {
-                        it + (name to (listOf(newMemo.id) + (it[name] ?: emptyList())))
-                    }
-                }
-                newMemo
+                val realMemo = result.data
+
+                // 服务器会直接使用我们传入的 uuid
+                memoDao.updateStatus(memoId, SyncStatus.SYNCED)
+
+                realMemo
+            }
+
+            is ApiResult.Failure -> {
+                throw BusinessException(result.code, result.errorMessage, result.traceId)
             }
         }
     }
 
-    suspend fun deleteMemo(id: String): Boolean {
-        val response = memoApi.deleteMemo(id)
-        return when (val result = response.toApiResult()) {
-            is ApiResult.Failure -> throw BusinessException(
-                result.code,
-                result.errorMessage,
-                result.traceId
-            )
+    suspend fun refreshMemoDetail(id: String) {
+        try {
+            val response = memoApi.getMemoDetail(id)
+            when (val result = response.toApiResult()) {
+                is ApiResult.Success -> {
+                    memoDao.saveSyncMemos(result.data.toFlattenEntityList())
+                }
 
+                is ApiResult.Failure -> {
+                    throw BusinessException(result.code, result.errorMessage, result.traceId)
+                }
+            }
+        } catch (e: Exception) {
+            // 静默失败
+        }
+    }
+
+    suspend fun deleteMemo(id: String): Boolean {
+        memoDao.smartDelete(id)
+
+        val response = memoApi.deleteMemo(id)
+
+        return when (val result = response.toApiResult()) {
             is ApiResult.Success -> {
-                _memoEntities.update { it - id }
-                _personalTimeline.update { map -> map.mapValues { (_, ids) -> ids.filter { it != id } } }
-                _exploreTimeline.update { list -> list.filter { it != id } }
+                memoDao.deleteRaw(id)
                 true
+            }
+
+            is ApiResult.Failure -> {
+                throw BusinessException(result.code, result.errorMessage, result.traceId)
             }
         }
     }
@@ -157,31 +206,27 @@ class MemoRepository @Inject constructor(
         isPinned: Boolean?,
         quoteMemo: PatchQuoteMemoField
     ): Boolean {
-        val oldMemo = _memoEntities.value[id]
         val finalQuotedMemo = when (quoteMemo) {
             is PatchQuoteMemoField.Exist -> quoteMemo.memo
             is PatchQuoteMemoField.Empty -> null
-            else -> oldMemo?.quotedMemo
         }
 
-        // 乐观更新
-        _memoEntities.update { currentMap ->
-            val memo = currentMap[id] ?: return@update currentMap
-            currentMap + (id to memo.copy(
-                content = content ?: memo.content,
-                visibility = visibility ?: memo.visibility,
-                resources = resources ?: memo.resources,
-                createdAt = createdAt ?: memo.createdAt,
-                isPinned = isPinned ?: memo.isPinned,
-                quotedMemo = finalQuotedMemo
-            ))
+        val rowsAffected = memoDao.smartUpdate(
+            id = id,
+            content = content,
+            visibility = visibility,
+            resources = resources,
+            createdAt = createdAt,
+            isPinned = isPinned,
+            quoteMemo = quoteMemo
+        )
+        if (rowsAffected == 0) {
+            throw BusinessException(404, "找不到 memo", "")
         }
-
-        val createdAtTimestamp = createdAt?.let { Instant.parse(it).toEpochMilliseconds() }
         val patchBody = buildJsonObject {
             put("quoteId", finalQuotedMemo?.id)
             isPinned?.let { put("isPinned", it) }
-            createdAtTimestamp?.let { put("createdAt", it) }
+            createdAt?.let { put("createdAt", it) }
             visibility?.let { put("visibility", it) }
             resources?.let { list -> putJsonArray("resources") { list.forEach { add(it.id) } } }
             content?.let { put("content", it) }
@@ -189,33 +234,18 @@ class MemoRepository @Inject constructor(
 
         val response = memoApi.patchMemo(id, patchBody)
         return when (val result = response.toApiResult()) {
+            is ApiResult.Success -> {
+                memoDao.updateStatus(id, SyncStatus.SYNCED)
+                true
+            }
+
             is ApiResult.Failure -> {
-                if (oldMemo != null) _memoEntities.update { it + (id to oldMemo) }
                 throw BusinessException(result.code, result.errorMessage, result.traceId)
             }
-
-            is ApiResult.Success -> true
         }
     }
 
-    fun getMemoDetail(id: String): Flow<Memo> = flow {
-        _memoEntities.value[id]?.let { emit(it) }
-        val response = memoApi.getMemoDetail(id)
-        when (val result = response.toApiResult()) {
-            is ApiResult.Failure -> throw BusinessException(
-                result.code,
-                result.errorMessage,
-                result.traceId
-            )
-
-            is ApiResult.Success -> {
-                emit(result.data)
-                updateEntities(listOf(result.data))
-            }
-        }
-    }
-
-    fun searchMemos(keyword: String): Flow<List<Memo>> = flow {
+    fun searchMemos(keyword: String): Flow<List<ApiMemo>> = flow {
         val response = memoApi.searchMemos(keyword)
         when (val result = response.toApiResult()) {
             is ApiResult.Failure -> throw BusinessException(
@@ -226,5 +256,10 @@ class MemoRepository @Inject constructor(
 
             is ApiResult.Success -> emit(result.data)
         }
+    }
+
+    suspend fun hasSynced(username: String?): Boolean {
+        val keyId = if (username == null) "explore" else "user_$username"
+        return remoteCursorDao.getRemoteCursor(keyId) != null
     }
 }

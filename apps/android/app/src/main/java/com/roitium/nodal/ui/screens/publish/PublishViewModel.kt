@@ -10,14 +10,17 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.roitium.nodal.data.models.Memo
+import com.roitium.nodal.data.local.entity.MemoEntity
+import com.roitium.nodal.data.local.relation.MemoPopulated
 import com.roitium.nodal.data.models.PatchQuoteMemoField
 import com.roitium.nodal.data.models.Resource
 import com.roitium.nodal.data.repository.MemoRepository
 import com.roitium.nodal.data.repository.ResourceRepository
+import com.roitium.nodal.di.AppModule
 import com.roitium.nodal.ui.navigation.NodalDestinations
 import dagger.hilt.android.lifecycle.HiltViewModel
 import jakarta.inject.Inject
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.Channel
@@ -51,7 +54,8 @@ sealed interface PublishUiEvent {
 class PublishViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val memoRepository: MemoRepository,
-    private val resourceRepository: ResourceRepository
+    private val resourceRepository: ResourceRepository,
+    @AppModule.ApplicationScope private val applicationScope: CoroutineScope
 ) : ViewModel() {
     var content by mutableStateOf("")
     var isPrivate by mutableStateOf(false)
@@ -67,9 +71,9 @@ class PublishViewModel @Inject constructor(
 
     var isLoadingReplyMemo by mutableStateOf(false)
         private set
-    var referredMemo by mutableStateOf<Memo?>(null)
+    var referredMemo by mutableStateOf<MemoEntity?>(null)
         private set
-    var replyMemo by mutableStateOf<Memo?>(null)
+    var replyMemo by mutableStateOf<MemoPopulated?>(null)
         private set
 
     private val _uiEvent = Channel<PublishUiEvent>()
@@ -95,7 +99,7 @@ class PublishViewModel @Inject constructor(
         viewModelScope.launch {
             isLoadingReplyMemo = true
             try {
-                val memo = memoRepository.getMemoDetail(id).first()
+                val memo = memoRepository.getMemoDetailFlow(id).first()
                 replyMemo = memo
             } catch (e: Exception) {
                 _uiEvent.send(PublishUiEvent.ShowMessage("加载回复的帖子: ${e.message}"))
@@ -110,15 +114,15 @@ class PublishViewModel @Inject constructor(
         viewModelScope.launch {
             isLoadingRawMemo = true
             try {
-                val memo = memoRepository.getMemoDetail(id).first()
+                val memo = memoRepository.getMemoDetailFlow(id).first()
 
-                content = memo.content
-                isPrivate = memo.visibility == "private"
-                referredMemo = memo.quotedMemo
+                content = memo?.memo?.content ?: ""
+                isPrivate = memo?.memo?.visibility == "private"
+                referredMemo = memo?.memo?.quotedMemo
 
-                val existingResources = memo.resources.map { resource ->
+                val existingResources = memo?.memo?.resources?.map { resource ->
                     ResourceUnify.Remote(resource)
-                }
+                }.orEmpty()
                 resources.clear()
                 resources.addAll(existingResources)
             } catch (e: Exception) {
@@ -130,7 +134,7 @@ class PublishViewModel @Inject constructor(
         }
     }
 
-    fun updateReferredMemoId(memo: Memo) {
+    fun updateReferredMemoId(memo: MemoEntity) {
         referredMemo = memo
     }
 
@@ -207,17 +211,18 @@ class PublishViewModel @Inject constructor(
             return
         }
 
-        val resourceIds = resources.mapNotNull { (it as? ResourceUnify.Remote)?.resource?.id }
         val resourceObjects = resources.mapNotNull { (it as? ResourceUnify.Remote)?.resource }
 
         if (realMemoId != null) {
-            viewModelScope.launch {
+            // 在这里使用 applicationScope，因为发布后我们立刻就会返回主页，使用 viewModelScope 协程就寄了
+            applicationScope.launch {
                 isPublishLoading = true
                 try {
                     val finalReferredMemo =
                         if (referredMemo == null) PatchQuoteMemoField.Empty else PatchQuoteMemoField.Exist(
                             referredMemo!!
                         )
+                    _uiEvent.send(PublishUiEvent.EditSuccess())
                     memoRepository.patchMemo(
                         id = realMemoId,
                         content = content,
@@ -227,7 +232,6 @@ class PublishViewModel @Inject constructor(
                         createdAt = null,
                         isPinned = null
                     )
-                    _uiEvent.send(PublishUiEvent.EditSuccess())
                 } catch (e: Exception) {
                     _uiEvent.send(PublishUiEvent.ShowMessage(e.message ?: "Unknown"))
                 } finally {
@@ -235,17 +239,17 @@ class PublishViewModel @Inject constructor(
                 }
             }
         } else {
-            viewModelScope.launch {
+            applicationScope.launch {
                 isPublishLoading = true
                 try {
+                    _uiEvent.send(PublishUiEvent.PublishSuccess())
                     memoRepository.publish(
                         content = content,
                         visibility = if (isPrivate) "private" else "public",
-                        resources = resourceIds,
-                        referredMemoId = referredMemo?.id,
-                        replyMemo = replyMemo
+                        resources = resourceObjects,
+                        referredMemo = referredMemo,
+                        replyMemo = replyMemo?.memo
                     )
-                    _uiEvent.send(PublishUiEvent.PublishSuccess())
                 } catch (e: Exception) {
                     _uiEvent.send(PublishUiEvent.ShowMessage(e.message ?: "Unknown"))
                 } finally {
