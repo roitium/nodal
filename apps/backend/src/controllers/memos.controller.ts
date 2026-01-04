@@ -596,6 +596,55 @@ export const memosController = new Elysia({ prefix: '/memos', tags: ['memos'] })
 					or(eq(memos.userId, user.id), eq(memos.visibility, 'public')),
 				),
 				orderBy: [desc(memos.createdAt)],
+				with: {
+					author: {
+						columns: {
+							id: true,
+							username: true,
+							displayName: true,
+							avatarUrl: true,
+							bio: true,
+							createdAt: true,
+						},
+					},
+					quotedMemo: true,
+					resources: {
+						columns: {
+							id: true,
+							externalLink: true,
+							type: true,
+							size: true,
+							memoId: true,
+							filename: true,
+							createdAt: true,
+						},
+					},
+					// 我们只提供第一级回复的信息
+					replies: {
+						with: {
+							author: {
+								columns: {
+									id: true,
+									username: true,
+									displayName: true,
+									avatarUrl: true,
+								},
+							},
+							quotedMemo: true,
+							resources: {
+								columns: {
+									id: true,
+									externalLink: true,
+									type: true,
+									size: true,
+									memoId: true,
+									filename: true,
+									createdAt: true,
+								},
+							},
+						},
+					},
+				},
 			})
 			return status(200, success({ data: result, traceId: traceId }))
 		},
