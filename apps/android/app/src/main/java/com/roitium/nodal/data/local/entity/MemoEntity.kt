@@ -1,5 +1,6 @@
 package com.roitium.nodal.data.local.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.roitium.nodal.data.models.Resource
@@ -41,6 +42,9 @@ data class MemoEntity(
     val author: User? = null,
     val authorUsername: String,
     val resources: List<Resource> = emptyList(),
+
+    @ColumnInfo(defaultValue = "0")
+    val subReplyCount: Int = 0,
 
     val status: SyncStatus,
 ) {

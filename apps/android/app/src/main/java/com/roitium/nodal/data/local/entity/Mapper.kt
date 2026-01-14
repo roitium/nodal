@@ -3,6 +3,7 @@ package com.roitium.nodal.data.local.entity
 import android.util.Log
 import com.roitium.nodal.data.models.ApiMemo
 import com.roitium.nodal.data.models.ApiQuotedMemo
+import com.roitium.nodal.data.models.ApiReplyMemo
 
 fun ApiMemo.toFlattenEntityList(): List<MemoEntity> {
     Log.d("quoteMemo", this.toString())
@@ -22,7 +23,6 @@ fun ApiMemo.toFlattenEntityList(): List<MemoEntity> {
     }
 
     this.quotedMemo?.let {
-        Log.d("quoteMemo", this.quotedMemo.toString())
         resultList.add(it.toSingleEntity())
     }
 
@@ -39,6 +39,7 @@ fun ApiMemo.toSingleEntity(): MemoEntity {
 
         parentId = this.parentId,
         quotedMemo = this.quotedMemo?.toSingleEntity(),
+        subReplyCount = this.replies.size,
 
         createdAt = this.createdAt,
         visibility = this.visibility,
@@ -62,6 +63,27 @@ fun ApiQuotedMemo.toSingleEntity(): MemoEntity {
         createdAt = this.createdAt,
         visibility = this.visibility,
         isPinned = this.isPinned,
+        updatedAt = this.updatedAt,
+        status = SyncStatus.SYNCED
+    )
+}
+
+fun ApiReplyMemo.toSingleEntity(): MemoEntity {
+    return MemoEntity(
+        id = this.id,
+        content = this.content,
+
+        authorUsername = this.author.username,
+        author = this.author,
+
+        parentId = this.parentId,
+        quotedMemo = this.quotedMemo?.toSingleEntity(),
+        subReplyCount = this.subReplyCount ?: 0,
+
+        createdAt = this.createdAt,
+        visibility = this.visibility,
+        isPinned = this.isPinned,
+        resources = this.resources,
         updatedAt = this.updatedAt,
         status = SyncStatus.SYNCED
     )

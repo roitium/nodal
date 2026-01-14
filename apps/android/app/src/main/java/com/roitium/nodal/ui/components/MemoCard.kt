@@ -61,12 +61,13 @@ import com.mikepenz.markdown.compose.elements.highlightedCodeFence
 import com.mikepenz.markdown.m3.Markdown
 import com.roitium.nodal.data.local.entity.MemoEntity
 import com.roitium.nodal.data.local.entity.SyncStatus
+import com.roitium.nodal.data.models.Resource
 import java.time.Instant
 
 @Composable
 fun MemoCard(
     memoEntity: MemoEntity,
-    memoReplies: List<MemoEntity>,
+    memoRepliesCount: Int,
     quotedMemo: MemoEntity?,
     modifier: Modifier = Modifier,
     containerColor: Color = MaterialTheme.colorScheme.surfaceContainer,
@@ -112,68 +113,20 @@ fun MemoCard(
             modifier = Modifier.padding(16.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data(memoEntity.author?.avatarUrl)
-                        .diskCachePolicy(CachePolicy.ENABLED)
-                        .memoryCachePolicy(CachePolicy.ENABLED)
-                        .build(),
-                    contentDescription = "Avatar",
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .clickable {
-                            onClickAvatar(memoEntity.author?.username ?: "")
-                        },
-                    contentScale = ContentScale.Crop,
+                MemoAvatar(
+                    avatarUrl = memoEntity.author?.avatarUrl,
+                    onClick = { onClickAvatar(memoEntity.author?.username ?: "") }
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = memoEntity.author?.displayName
-                                ?: memoEntity.author?.username
-                                ?: "Unknown",
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        if (memoEntity.visibility == "public") {
-                            Icon(
-                                Icons.Default.Public,
-                                contentDescription = "public",
-                                modifier = Modifier.size(16.dp)
-                            )
-                        } else {
-                            Icon(
-                                Icons.Default.RemoveRedEye,
-                                contentDescription = "private",
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                        if (memoEntity.isPinned) {
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Icon(
-                                Icons.Default.PushPin,
-                                contentDescription = "pinned",
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                        if (memoEntity.status != SyncStatus.SYNCED) {
-                            Spacer(modifier = Modifier.width(8.dp))
-                            CircularProgressIndicator(modifier = Modifier.size(16.dp))
-                        }
-                    }
-                    Text(
-                        text = DateUtils.getRelativeTimeSpanString(
-                            Instant.parse(memoEntity.createdAt).toEpochMilli(),
-                            System.currentTimeMillis(),
-                            DateUtils.MINUTE_IN_MILLIS,
-                            DateUtils.FORMAT_ABBREV_RELATIVE
-                        ).toString(),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                MemoHeaderInfo(
+                    displayName = memoEntity.author?.displayName,
+                    username = memoEntity.author?.username,
+                    visibility = memoEntity.visibility,
+                    isPinned = memoEntity.isPinned,
+                    createdAt = memoEntity.createdAt,
+                    showSyncIndicator = memoEntity.status != SyncStatus.SYNCED,
+                    modifier = Modifier.weight(1f)
+                )
                 if (!onlyShowContent) {
                     IconButton(onClick = { onClickReply(memoEntity.id) }) {
                         Icon(
@@ -225,83 +178,34 @@ fun MemoCard(
                 }
             }
             Spacer(modifier = Modifier.height(8.dp))
-            Markdown(
-                memoEntity.content.trimIndent(),
-                imageTransformer = Coil2ImageTransformerImpl,
-                components = markdownComponents(
-                    codeBlock = highlightedCodeBlock,
-                    codeFence = highlightedCodeFence,
-                )
+            MemoContent(content = memoEntity.content)
+
+            MemoResourceGrid(
+                resources = memoEntity.resources,
+                onClickImage = onClickImage,
+                sharedTransitionScope = sharedTransitionScope,
+                animatedVisibilityScope = animatedVisibilityScope,
+                imageSharedContentKeyPrefix = imageSharedContentKeyPrefix,
+                modifier = Modifier.padding(top = 16.dp)
             )
-            if (memoEntity.resources.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(16.dp))
-                FlowRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    maxItemsInEachRow = 3
-                ) {
-                    memoEntity.resources.forEach { resource ->
-                        with(sharedTransitionScope) {
-                            AsyncImage(
-                                model = ImageRequest.Builder(LocalContext.current)
-                                    .data(resource.externalLink)
-                                    .diskCachePolicy(CachePolicy.DISABLED)
-                                    .memoryCachePolicy(CachePolicy.ENABLED)
-                                    .build(),
-                                contentDescription = "Resource",
-                                modifier = Modifier
-                                    .size(100.dp)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .clickable {
-                                        onClickImage(resource.externalLink)
-                                    }
-                                    .sharedElement(
-                                        sharedContentState = rememberSharedContentState(key = "${imageSharedContentKeyPrefix}-${resource.externalLink}"),
-                                        animatedVisibilityScope = animatedVisibilityScope,
-                                    ),
-                                contentScale = ContentScale.Crop
-                            )
-                        }
-                    }
-                }
 
-            }
             if (quotedMemo != null) {
-                Spacer(modifier = Modifier.height(16.dp))
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .then(
-                            if (onClickReferredMemo != null) {
-                                Modifier.clickable { onClickReferredMemo(quotedMemo.id) }
-                            } else {
-                                Modifier
-                            }
-                        ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp)
-                    ) {
-                        Text(
-                            text = quotedMemo.content,
-                            style = MaterialTheme.typography.bodyMedium,
-                            maxLines = 5,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-
-                }
+                MemoQuotedCard(
+                    content = quotedMemo.content,
+                    onClick = if (onClickReferredMemo != null) {
+                        { onClickReferredMemo(quotedMemo.id) }
+                    } else null,
+                    modifier = Modifier.padding(top = 16.dp)
+                )
             }
-            if (memoReplies.isNotEmpty()) {
+            if (memoRepliesCount > 0) {
                 Spacer(modifier = Modifier.height(16.dp))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Spacer(modifier = Modifier.weight(1f))
                     Text(
-                        "查看 ${memoReplies.size} 条回复",
+                        "查看 $memoRepliesCount 条回复",
                         style = MaterialTheme.typography.labelMedium
                     )
                     Icon(
@@ -334,5 +238,188 @@ fun MemoCard(
                 }
             }
         )
+    }
+}
+
+@Composable
+fun MemoAvatar(
+    avatarUrl: String?,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    AsyncImage(
+        model = ImageRequest.Builder(LocalContext.current)
+            .data(avatarUrl)
+            .diskCachePolicy(CachePolicy.ENABLED)
+            .memoryCachePolicy(CachePolicy.ENABLED)
+            .build(),
+        contentDescription = "Avatar",
+        modifier = modifier
+            .size(40.dp)
+            .clip(CircleShape)
+            .clickable { onClick() },
+        contentScale = ContentScale.Crop,
+    )
+}
+
+@Composable
+fun MemoHeaderInfo(
+    displayName: String?,
+    username: String?,
+    visibility: String,
+    isPinned: Boolean,
+    createdAt: String,
+    modifier: Modifier = Modifier,
+    showSyncIndicator: Boolean = false,
+) {
+    Column(modifier = modifier) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = displayName ?: username ?: "Unknown",
+                style = MaterialTheme.typography.titleMedium
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            if (visibility == "public") {
+                Icon(
+                    Icons.Default.Public,
+                    contentDescription = "public",
+                    modifier = Modifier.size(16.dp)
+                )
+            } else {
+                Icon(
+                    Icons.Default.RemoveRedEye,
+                    contentDescription = "private",
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+            if (isPinned) {
+                Spacer(modifier = Modifier.width(4.dp))
+                Icon(
+                    Icons.Default.PushPin,
+                    contentDescription = "pinned",
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+            if (showSyncIndicator) {
+                Spacer(modifier = Modifier.width(8.dp))
+                CircularProgressIndicator(modifier = Modifier.size(16.dp))
+            }
+        }
+        Text(
+            text = DateUtils.getRelativeTimeSpanString(
+                Instant.parse(createdAt).toEpochMilli(),
+                System.currentTimeMillis(),
+                DateUtils.MINUTE_IN_MILLIS,
+                DateUtils.FORMAT_ABBREV_RELATIVE
+            ).toString(),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+fun MemoContent(
+    content: String,
+    modifier: Modifier = Modifier,
+    maxLines: Int? = null,
+    onClick: (() -> Unit)? = null,
+) {
+    Markdown(
+        content.trimIndent(),
+        modifier = modifier.then(
+            if (onClick != null) Modifier.clickable { onClick() } else Modifier
+        ),
+        imageTransformer = Coil2ImageTransformerImpl,
+        components = markdownComponents(
+            codeBlock = highlightedCodeBlock,
+            codeFence = highlightedCodeFence,
+        )
+    )
+}
+
+@Composable
+fun MemoResourceGrid(
+    resources: List<Resource>,
+    onClickImage: (url: String?) -> Unit,
+    modifier: Modifier = Modifier,
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedVisibilityScope: AnimatedVisibilityScope? = null,
+    imageSharedContentKeyPrefix: String? = null,
+) {
+    if (resources.isNotEmpty()) {
+        FlowRow(
+            modifier = modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            maxItemsInEachRow = 3
+        ) {
+            resources.forEach { resource ->
+                val imageRequest = ImageRequest.Builder(LocalContext.current)
+                    .data(resource.externalLink)
+                    .diskCachePolicy(CachePolicy.ENABLED)
+                    .memoryCachePolicy(CachePolicy.ENABLED)
+                    .build()
+
+                val imageModifier = Modifier
+                    .size(100.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable {
+                        onClickImage(resource.externalLink)
+                    }
+
+                if (sharedTransitionScope != null && animatedVisibilityScope != null && imageSharedContentKeyPrefix != null) {
+                    with(sharedTransitionScope) {
+                        AsyncImage(
+                            model = imageRequest,
+                            contentDescription = "Resource",
+                            modifier = imageModifier.sharedElement(
+                                sharedContentState = rememberSharedContentState(key = "${imageSharedContentKeyPrefix}-${resource.externalLink}"),
+                                animatedVisibilityScope = animatedVisibilityScope,
+                            ),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                } else {
+                    AsyncImage(
+                        model = imageRequest,
+                        contentDescription = "Resource",
+                        modifier = imageModifier,
+                        contentScale = ContentScale.Crop
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun MemoQuotedCard(
+    content: String,
+    onClick: (() -> Unit)?,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .then(
+                if (onClick != null) {
+                    Modifier.clickable { onClick() }
+                } else {
+                    Modifier
+                }
+            ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                text = content,
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 5,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
     }
 }

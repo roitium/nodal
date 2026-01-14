@@ -47,6 +47,7 @@ import com.roitium.nodal.ui.screens.memoDetail.MemoDetailScreen
 import com.roitium.nodal.ui.screens.publish.PublishScreen
 import com.roitium.nodal.ui.screens.register.RegisterScreen
 import com.roitium.nodal.ui.screens.resource.ResourceScreen
+import com.roitium.nodal.ui.screens.search.SearchScreen
 import com.roitium.nodal.ui.screens.timeline.TimelineScreen
 import com.roitium.nodal.ui.theme.NodalTheme
 import com.roitium.nodal.utils.AuthState
@@ -307,6 +308,28 @@ fun NodalApp(mainViewModel: MainViewModel = hiltViewModel()) {
                                         TIMELINE_TYPE.PERSONAL,
                                         it
                                     )
+                                    navController.navigate(destination)
+                                }
+                            )
+                        }
+                        composable(NodalDestinations.SEARCH_ROUTE) {
+                            SearchScreen(
+                                onOpenDrawer = {
+                                    scope.launch { drawerState.open() }
+                                },
+                                onNavigateToMemoDetail = { memoId ->
+                                    val destination = NodalDestinations.buildMemoDetailRoute(memoId)
+                                    navController.navigate(destination)
+                                },
+                                onNavigateToTimeline = { username ->
+                                    val destination = NodalDestinations.buildTimelineRoute(
+                                        TIMELINE_TYPE.PERSONAL,
+                                        username
+                                    )
+                                    navController.navigate(destination)
+                                },
+                                onClickImage = { url ->
+                                    val destination = NodalDestinations.buildImageViewerRoute(url.toString())
                                     navController.navigate(destination)
                                 }
                             )

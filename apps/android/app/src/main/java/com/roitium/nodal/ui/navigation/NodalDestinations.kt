@@ -16,6 +16,7 @@ object NodalDestinations {
     const val REGISTER_ROUTE = "register"
     const val RESOURCE_ROUTE = "resource"
     const val MEMO_DETAIL_ROUTE = "memo_detail/{memoId}"
+    const val SEARCH_ROUTE = "search"
 
     object Args {
         const val TYPE = "type"

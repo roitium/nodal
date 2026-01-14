@@ -59,9 +59,7 @@ class MemoDetailViewModel @Inject constructor(
         }
     }
 
-    fun deleteMemo(onDeleteSuccess: () -> Unit) {
-        if (memoId == null) return
-
+    fun deleteMemo(memoId: String, onDeleteSuccess: () -> Unit) {
         viewModelScope.launch {
             withContext(NonCancellable) {
                 try {

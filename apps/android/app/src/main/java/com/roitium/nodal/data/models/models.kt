@@ -47,10 +47,26 @@ data class ApiMemo(
     val createdAt: String,
     val author: User,
     val resources: List<Resource> = emptyList(),
-    val replies: List<ApiMemo> = emptyList(),
+    val replies: List<ApiReplyMemo> = emptyList(),
     val quotedMemo: ApiQuotedMemo? = null,
     val updatedAt: String,
-    val parentId: String?
+    val parentId: String?,
+)
+
+@Serializable
+data class ApiReplyMemo(
+    val id: String,
+    val content: String,
+    val userId: String,
+    val visibility: String = "public",
+    val isPinned: Boolean = false,
+    val createdAt: String,
+    val author: User,
+    val resources: List<Resource> = emptyList(),
+    val quotedMemo: ApiQuotedMemo? = null,
+    val updatedAt: String,
+    val parentId: String?,
+    val subReplyCount: Int?,
 )
 
 @Serializable

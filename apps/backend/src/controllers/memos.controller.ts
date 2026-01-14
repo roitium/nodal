@@ -87,6 +87,8 @@ export const memosController = new Elysia({ prefix: '/memos', tags: ['memos'] })
 						and(eq(memos.createdAt, cursorDate), lt(memos.id, cursorId)),
 					)!,
 				)
+				// 当使用游标分页时，排除置顶内容（置顶内容只在第一页显示）
+				filters.push(eq(memos.isPinned, false))
 			}
 
 			const data = await db.query.memos.findMany({

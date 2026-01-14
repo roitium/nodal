@@ -166,8 +166,8 @@ fun TimelineScreen(
                                     sharedTransitionScope = sharedTransitionScope,
                                     imageSharedContentKeyPrefix = "timeline-page-image",
                                     onClickAvatar = onNavigateToTimeline,
-                                    memoReplies = memo.replies,
-                                    quotedMemo = memo.memo.quotedMemo
+                                    quotedMemo = memo.memo.quotedMemo,
+                                    memoRepliesCount = memo.memo.subReplyCount
                                 )
                             }
                         }

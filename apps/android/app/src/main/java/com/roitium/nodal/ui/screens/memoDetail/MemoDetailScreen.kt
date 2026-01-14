@@ -97,8 +97,8 @@ fun MemoDetailScreen(
                                         // 这里我们直接把 replies 列表覆盖为空，避免显示 tip
                                         memoEntity = (uiState as MemoDetailUiState.Success).memo.memo,
                                         onClickImage = onClickImage,
-                                        onDelete = {
-                                            viewModel.deleteMemo({
+                                        onDelete = { id ->
+                                            viewModel.deleteMemo(id, {
                                                 onNavigateBack()
                                             })
                                         },
@@ -123,7 +123,7 @@ fun MemoDetailScreen(
                                         ),
                                         imageSharedContentKeyPrefix = "detail-page-image",
                                         onClickAvatar = onNavigateToTimeline,
-                                        memoReplies = emptyList(),
+                                        memoRepliesCount = 0,
                                         quotedMemo = (uiState as MemoDetailUiState.Success).memo.memo.quotedMemo
                                     )
                                 }
@@ -150,7 +150,7 @@ fun MemoDetailScreen(
                                             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
                                             onClickImage = onClickImage,
                                             onDelete = { id ->
-                                                viewModel.deleteMemo {
+                                                viewModel.deleteMemo(id) {
                                                 }
                                             },
                                             onClickMemo = onNavigateToMemoDetail,
@@ -165,7 +165,7 @@ fun MemoDetailScreen(
                                             sharedTransitionScope = sharedTransitionScope,
                                             imageSharedContentKeyPrefix = "detail-page-image",
                                             onClickAvatar = onNavigateToTimeline,
-                                            memoReplies = emptyList(),
+                                            memoRepliesCount = item.subReplyCount,
                                             quotedMemo = null
                                         )
                                     }

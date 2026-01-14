@@ -231,8 +231,8 @@ fun PublishScreen(
                                 animatedVisibilityScope = animatedVisibilityScope,
                                 sharedTransitionScope = sharedTransitionScope,
                                 imageSharedContentKeyPrefix = "do-not-use-it",
-                                memoReplies = emptyList(),
-                                quotedMemo = viewModel.replyMemo?.memo?.quotedMemo
+                                quotedMemo = viewModel.replyMemo?.memo?.quotedMemo,
+                                memoRepliesCount = 0
                             ) {}
                             Spacer(modifier = Modifier.height(16.dp))
                         }

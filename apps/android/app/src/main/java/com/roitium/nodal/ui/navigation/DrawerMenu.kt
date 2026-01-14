@@ -3,6 +3,7 @@ package com.roitium.nodal.ui.navigation
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Map
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.ui.graphics.vector.ImageVector
 
 data class DrawerItem(
@@ -25,7 +26,12 @@ val drawerScreens = listOf(
         route = NodalDestinations.buildTimelineRoute(TIMELINE_TYPE.PERSONAL),
         type = "personal"
     ),
-
+    DrawerItem(
+        label = "搜索",
+        icon = Icons.Default.Search,
+        route = NodalDestinations.SEARCH_ROUTE,
+        type = null
+    ),
     DrawerItem(
         label = "资源库",
         icon = Icons.Default.Map,

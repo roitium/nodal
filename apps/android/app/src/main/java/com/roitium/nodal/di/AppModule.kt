@@ -3,6 +3,7 @@ package com.roitium.nodal.di
 import android.content.Context
 import androidx.room.Room
 import com.roitium.nodal.data.local.AppDatabase
+import com.roitium.nodal.data.local.MIGRATION_1_2
 import com.roitium.nodal.data.local.dao.MemoDao
 import com.roitium.nodal.data.local.dao.RemoteCursorDao
 import dagger.Module
@@ -26,7 +27,7 @@ object AppModule {
             context,
             AppDatabase::class.java,
             "memos_db"
-        ).build()
+        ).addMigrations(MIGRATION_1_2).build()
     }
 
     @Provides
