@@ -87,8 +87,10 @@ export function CreateMemo() {
             </SelectContent>
           </Select>
         }
-        className="border-none shadow-none"
         footerClassName={isActive ? undefined : "hidden"}
+        submitClassName={isActive ? undefined : "hidden"}
+        uploadButtonClassName={isActive ? undefined : "hidden"}
+        className={cn("border-none shadow-none", !isActive && "memo-composer-collapsed")}
       />
     </div>
   );

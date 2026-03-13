@@ -11,7 +11,7 @@ import type { Route } from "./+types/home";
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "Nodal - Home" },
+    { title: "Nodal - Timeline" },
     { name: "description", content: "Capture your thoughts, anywhere, anytime." },
   ];
 }
@@ -27,7 +27,7 @@ export default function HomeRoute() {
     hasNextPage,
     isFetchingNextPage,
     status,
-  } = useTimeline({ date: dateFilter });
+  } = useTimeline({ scope: "self", date: dateFilter });
 
   const { ref, inView } = useInView();
   const { t } = useTranslation();

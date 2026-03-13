@@ -1,7 +1,7 @@
 {
   "sidebar": {
-    "home": "Home",
-    "search": "Search",
+    "timeline": "Timeline",
+    "explore": "Explore",
     "settings": "Settings",
     "profile": "Profile",
     "installApp": "Install App",
@@ -17,6 +17,7 @@
     "displayName": "Display Name",
     "displayNamePlaceholder": "Your display name",
     "avatarUrl": "Avatar URL",
+    "coverImageUrl": "Cover Image URL",
     "bio": "Bio",
     "bioPlaceholder": "Tell people something about yourself",
     "save": "Save Profile",
@@ -25,7 +26,9 @@
   "pwa": {
     "updateAvailableTitle": "Update available",
     "updateAvailableDesc": "A new version is ready. Refresh now to update.",
-    "updateAction": "Update"
+    "updateAction": "Update",
+    "installHintTitle": "Install from browser menu",
+    "installHintDesc": "Use your browser menu and choose 'Add to Home Screen' to install."
   },
   "createMemo": {
     "placeholder": "What's on your mind?",
@@ -35,7 +38,12 @@
     "post": "Post",
     "posting": "Posting...",
     "reply": "Reply",
-    "replying": "Replying..."
+    "replying": "Replying...",
+    "cropTitle": "Crop image",
+    "cropHint": "Drag and zoom the image, then upload the cropped result.",
+    "cropZoom": "Zoom",
+    "cropSkip": "Skip crop",
+    "cropApply": "Apply crop"
   },
   "memoCard": {
     "edit": "Edit",
@@ -95,5 +103,9 @@
     "themeLight": "Light",
     "themeDark": "Dark",
     "themeSystem": "System"
+  },
+  "userProfile": {
+    "notFound": "User not found",
+    "loadError": "Failed to load memos"
   }
 }

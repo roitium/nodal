@@ -13,8 +13,12 @@ export function usePWAInstall() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstallable, setIsInstallable] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
 
   useEffect(() => {
+    const ua = window.navigator.userAgent;
+    setIsIOS(/iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream);
+
     // Check if already installed
     if (window.matchMedia("(display-mode: standalone)").matches) {
       setIsInstalled(true);
@@ -58,5 +62,5 @@ export function usePWAInstall() {
     }
   };
 
-  return { isInstallable, isInstalled, promptInstall };
+  return { isInstallable, isInstalled, isIOS, promptInstall };
 }

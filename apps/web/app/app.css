@@ -136,3 +136,36 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+/* Markdown editor theme tuning for both light/dark surfaces. */
+.w-md-editor,
+.w-md-editor-content,
+.w-md-editor-text,
+.w-md-editor-text-pre,
+.w-md-editor-text-input,
+.w-md-editor-text-pre > code {
+  background-color: transparent !important;
+}
+
+.dark .w-md-editor-toolbar {
+  background-color: color-mix(in oklab, var(--color-muted) 75%, transparent) !important;
+  border-bottom-color: color-mix(in oklab, var(--color-border) 80%, transparent) !important;
+}
+
+.dark .w-md-editor-toolbar button {
+  color: color-mix(in oklab, var(--color-foreground) 82%, transparent) !important;
+}
+
+.dark .w-md-editor-toolbar button:hover {
+  background-color: color-mix(in oklab, var(--color-accent) 75%, transparent) !important;
+}
+
+.dark .w-md-editor-text-input,
+.dark .w-md-editor-text-pre,
+.dark .w-md-editor-preview {
+  color: color-mix(in oklab, var(--color-foreground) 92%, transparent) !important;
+}
+
+.memo-composer-collapsed .w-md-editor-text-input {
+  overflow-y: hidden !important;
+}

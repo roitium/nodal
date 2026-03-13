@@ -39,14 +39,29 @@ export const memosController = new Elysia({ prefix: '/memos', tags: ['memos'] })
 		'/timeline',
 		async ({ user, query, status, tenant, db, traceId }) => {
 			const limit = query.limit ? parseInt(query.limit) : 20
-			const { cursorCreatedAt, cursorId, date, parentId } = query
+			const { cursorCreatedAt, cursorId, date, parentId, scope } = query
 			// 优先使用子域名作为用户名进行查询
 			const targetUsername = tenant ?? query.username
 			const currentUserId = user?.id ?? ''
 
 			const filters = parentId ? [eq(memos.parentId, parentId)] : [isNull(memos.parentId)]
 
-			if (targetUsername) {
+			if (scope === 'self') {
+				if (!currentUserId) {
+					return status(
+						401,
+						fail({
+							message: '请先登录',
+							code: GeneralCode.NeedLogin,
+							traceId,
+						}),
+					)
+				}
+
+				filters.push(eq(memos.userId, currentUserId))
+			} else if (scope === 'explore') {
+				filters.push(eq(memos.visibility, 'public'))
+			} else if (targetUsername) {
 				const targetUser = await db.query.users.findFirst({
 					where: eq(users.username, targetUsername),
 				})
@@ -197,6 +212,9 @@ export const memosController = new Elysia({ prefix: '/memos', tags: ['memos'] })
 				cursorCreatedAt: t.Optional(t.String({ format: 'date-time' })),
 				cursorId: t.Optional(t.String({ format: 'uuid' })),
 				username: t.Optional(t.String()),
+				scope: t.Optional(
+					t.Union([t.Literal('self'), t.Literal('explore')]),
+				),
 				date: t.Optional(t.String()),
 				parentId: t.Optional(t.String({ format: 'uuid' })),
 			}),

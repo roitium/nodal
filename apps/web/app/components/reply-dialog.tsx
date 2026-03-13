@@ -38,7 +38,7 @@ export function ReplyDialog({ memo, open, onOpenChange }: ReplyDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden gap-0">
+      <DialogContent className="sm:max-w-[600px] min-h-[420px] p-0 overflow-hidden gap-0">
         <DialogHeader className="p-4 pb-0">
           <DialogTitle>{t("memoCard.replyTo")} @{memo.author.username}</DialogTitle>
         </DialogHeader>
@@ -51,7 +51,7 @@ export function ReplyDialog({ memo, open, onOpenChange }: ReplyDialogProps) {
           submitLabel={t("createMemo.reply")}
           submittingLabel={t("createMemo.replying")}
           placeholder={t("createMemo.replyPlaceholder")}
-          height={150}
+          height={220}
           autoFocus
           resetSignal={resetSignal}
           draftKey={`reply:${memo.id}`}

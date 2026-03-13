@@ -57,6 +57,13 @@
       "when": 1767426791568,
       "tag": "0007_spotty_queen_noir",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1773394367905,
+      "tag": "0008_ambitious_the_executioner",
+      "breakpoints": true
     }
   ]
 }

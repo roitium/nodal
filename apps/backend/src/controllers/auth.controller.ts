@@ -189,7 +189,7 @@ export const authController = new Elysia({ prefix: '/auth', tags: ['auth'] })
 					}),
 				)
 
-			const { displayName, avatarUrl, bio } = body
+			const { displayName, avatarUrl, coverImageUrl, bio } = body
 
 			const userRecord = await db.query.users.findFirst({
 				where: eq(users.id, user.id),
@@ -210,6 +210,7 @@ export const authController = new Elysia({ prefix: '/auth', tags: ['auth'] })
 				.set({
 					displayName: displayName ?? userRecord.displayName,
 					avatarUrl: avatarUrl ?? userRecord.avatarUrl,
+					coverImageUrl: coverImageUrl ?? userRecord.coverImageUrl,
 					bio: bio ?? userRecord.bio,
 				})
 				.where(eq(users.id, user.id))
@@ -243,6 +244,7 @@ export const authController = new Elysia({ prefix: '/auth', tags: ['auth'] })
 			body: t.Object({
 				displayName: t.Optional(t.String()),
 				avatarUrl: t.Optional(t.String()),
+				coverImageUrl: t.Optional(t.String()),
 				bio: t.Optional(t.String()),
 			}),
 			detail: {
@@ -291,6 +293,50 @@ export const authController = new Elysia({ prefix: '/auth', tags: ['auth'] })
 		{
 			detail: {
 				description: '获取当前用户信息',
+			},
+		},
+	)
+	.get(
+		'/users/:username',
+		async ({ params, db, status, traceId }) => {
+			const userRecord = await db.query.users.findFirst({
+				where: eq(users.username, params.username),
+				columns: {
+					id: true,
+					username: true,
+					displayName: true,
+					avatarUrl: true,
+					coverImageUrl: true,
+					bio: true,
+					createdAt: true,
+					passwordHash: false,
+				},
+			})
+
+			if (!userRecord)
+				return status(
+					404,
+					fail({
+						message: '用户不存在',
+						code: AuthCode.NotFound,
+						traceId,
+					}),
+				)
+
+			return status(
+				200,
+				success({
+					data: userRecord,
+					traceId,
+				}),
+			)
+		},
+		{
+			params: t.Object({
+				username: t.String({ minLength: 1 }),
+			}),
+			detail: {
+				description: '按用户名获取用户公开资料',
 			},
 		},
 	)

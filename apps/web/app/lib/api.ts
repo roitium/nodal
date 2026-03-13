@@ -43,6 +43,17 @@ export interface User {
   email: string;
   displayName?: string;
   avatarUrl?: string;
+  coverImageUrl?: string;
+  bio?: string;
+  createdAt: string;
+}
+
+export interface UserProfile {
+  id: string;
+  username: string;
+  displayName?: string;
+  avatarUrl?: string;
+  coverImageUrl?: string;
   bio?: string;
   createdAt: string;
 }
@@ -82,6 +93,7 @@ export interface MemoParams {
   cursorCreatedAt?: string;
   cursorId?: string;
   username?: string;
+  scope?: "self" | "explore";
   date?: string;
   parentId?: string;
 }
@@ -119,6 +131,7 @@ export interface RegisterData {
 export interface UpdateProfileData {
   displayName?: string;
   avatarUrl?: string;
+  coverImageUrl?: string;
   bio?: string;
 }
 
@@ -200,6 +213,9 @@ export const authAPI = {
     data: UpdateProfileData,
   ): Promise<AxiosResponse<ApiResponse<User>>> =>
     apiClient.patch("/auth/me", data),
+
+  getUserProfile: (username: string): Promise<AxiosResponse<ApiResponse<UserProfile>>> =>
+    apiClient.get(`/auth/users/${username}`),
 };
 
 export interface MemoStats {

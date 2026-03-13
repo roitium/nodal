@@ -5,14 +5,13 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
 } from "~/components/ui/sidebar";
 import { useUser } from "~/hooks/queries/use-user";
-import { Home, Search, Settings, LogOut, Download, UserRound } from "lucide-react";
+import { Home, Compass, Settings, LogOut, Download, UserRound } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import {
   DropdownMenu,
@@ -24,12 +23,25 @@ import {
 import { useTranslation } from "react-i18next";
 import { Heatmap } from "~/components/heatmap";
 import { usePWAInstall } from "~/hooks/use-pwa-install";
+import { toast } from "sonner";
 
 export function AppSidebar() {
   const { data: user } = useUser();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { isInstallable, isInstalled, promptInstall } = usePWAInstall();
+  const { isInstallable, isInstalled, isIOS, promptInstall } = usePWAInstall();
+  const canShowInstallAction = !isInstalled && (isInstallable || isIOS);
+
+  const handleInstallClick = () => {
+    if (isInstallable) {
+      void promptInstall();
+      return;
+    }
+
+    toast.message(t("pwa.installHintTitle"), {
+      description: t("pwa.installHintDesc"),
+    });
+  };
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -46,25 +58,32 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent className="flex flex-col justify-between">
         <SidebarGroup>
-          <SidebarGroupLabel>Menu</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
                   <Link to="/">
                     <Home className="w-4 h-4" />
-                    <span>{t("sidebar.home")}</span>
+                    <span>{t("sidebar.timeline")}</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
-                  <Link to="/search">
-                    <Search className="w-4 h-4" />
-                    <span>{t("sidebar.search")}</span>
+                  <Link to="/explore">
+                    <Compass className="w-4 h-4" />
+                    <span>{t("sidebar.explore")}</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+              {canShowInstallAction && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton onClick={handleInstallClick}>
+                    <Download className="w-4 h-4" />
+                    <span>{t("sidebar.installApp")}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
                   <Link to="/settings">
@@ -103,12 +122,6 @@ export function AppSidebar() {
                   {t("sidebar.profile")}
                 </Link>
               </DropdownMenuItem>
-              {!isInstalled && isInstallable && (
-                <DropdownMenuItem onClick={promptInstall}>
-                  <Download className="w-4 h-4 mr-2" />
-                  {t("sidebar.installApp")}
-                </DropdownMenuItem>
-              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
                 <LogOut className="w-4 h-4 mr-2" />

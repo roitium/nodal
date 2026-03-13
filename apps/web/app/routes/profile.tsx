@@ -23,12 +23,14 @@ export default function ProfileRoute() {
 
   const [displayName, setDisplayName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
+  const [coverImageUrl, setCoverImageUrl] = useState("");
   const [bio, setBio] = useState("");
 
   useEffect(() => {
     if (!user) return;
     setDisplayName(user.displayName ?? "");
     setAvatarUrl(user.avatarUrl ?? "");
+    setCoverImageUrl(user.coverImageUrl ?? "");
     setBio(user.bio ?? "");
   }, [user]);
 
@@ -37,15 +39,17 @@ export default function ProfileRoute() {
     return (
       displayName !== (user.displayName ?? "") ||
       avatarUrl !== (user.avatarUrl ?? "") ||
+      coverImageUrl !== (user.coverImageUrl ?? "") ||
       bio !== (user.bio ?? "")
     );
-  }, [avatarUrl, bio, displayName, user]);
+  }, [avatarUrl, bio, coverImageUrl, displayName, user]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     await updateProfileMutation.mutateAsync({
       displayName: displayName.trim() || undefined,
       avatarUrl: avatarUrl.trim() || undefined,
+      coverImageUrl: coverImageUrl.trim() || undefined,
       bio: bio.trim() || undefined,
     });
   };
@@ -90,6 +94,16 @@ export default function ProfileRoute() {
                 value={avatarUrl}
                 onChange={(e) => setAvatarUrl(e.target.value)}
                 placeholder="https://example.com/avatar.png"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="coverImageUrl">{t("profile.coverImageUrl")}</Label>
+              <Input
+                id="coverImageUrl"
+                value={coverImageUrl}
+                onChange={(e) => setCoverImageUrl(e.target.value)}
+                placeholder="https://example.com/cover.jpg"
               />
             </div>
 

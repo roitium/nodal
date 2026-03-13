@@ -9,6 +9,8 @@ export default [
   route("login", "routes/login.tsx"),
   layout("routes/layout.tsx", [
     index("routes/home.tsx"),
+    route("explore", "routes/explore.tsx"),
+    route("u/:username", "routes/user.$username.tsx"),
     route("profile", "routes/profile.tsx"),
     route("search", "routes/search.tsx"),
     route("settings", "routes/settings.tsx"),

@@ -17,6 +17,7 @@ export const users = pgTable('users', {
 	username: text('username').notNull().unique(),
 	displayName: text('display_name'),
 	avatarUrl: text('avatar_url'),
+	coverImageUrl: text('cover_image_url'),
 	bio: text('bio'),
 	isAdmin: boolean('is_admin').default(false),
 	createdAt: timestamp('created_at', { mode: 'string', withTimezone: true })

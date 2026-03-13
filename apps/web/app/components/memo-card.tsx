@@ -118,6 +118,11 @@ export function MemoCard({ memo, isDetail = false }: MemoCardProps) {
     }
   };
 
+  const handleAuthorClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigate(`/u/${memo.author.username}`);
+  };
+
   return (
     <>
       <div 
@@ -125,21 +130,33 @@ export function MemoCard({ memo, isDetail = false }: MemoCardProps) {
         className={`flex gap-3 p-4 border-b border-border/50 transition-colors ${!isDetail ? 'cursor-pointer hover:bg-muted/30' : ''}`}
       >
         <div className="flex-shrink-0 pt-1">
-          <Avatar className="w-10 h-10">
-            <AvatarImage src={memo.author.avatarUrl} />
-            <AvatarFallback>{memo.author.username.slice(0, 2).toUpperCase()}</AvatarFallback>
-          </Avatar>
+          <button type="button" onClick={handleAuthorClick} className="rounded-full">
+            <Avatar className="w-10 h-10">
+              <AvatarImage src={memo.author.avatarUrl} />
+              <AvatarFallback>{memo.author.username.slice(0, 2).toUpperCase()}</AvatarFallback>
+            </Avatar>
+          </button>
         </div>
         
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-1.5 flex-wrap text-sm leading-5 mb-1">
-              <span className="font-bold text-foreground">
+              <button
+                type="button"
+                onClick={handleAuthorClick}
+                className="font-bold text-foreground hover:underline underline-offset-2"
+              >
                 {memo.author.displayName || memo.author.username}
-              </span>
-              <span className="text-muted-foreground">@{memo.author.username}</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleAuthorClick}
+                className="text-muted-foreground hover:underline underline-offset-2"
+              >
+                @{memo.author.username}
+              </button>
               <span className="text-muted-foreground">·</span>
-              <span className="text-muted-foreground hover:underline">
+              <span className="text-muted-foreground">
                 {displayTime}
               </span>
               
