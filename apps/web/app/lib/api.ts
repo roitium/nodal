@@ -1,15 +1,8 @@
 import type { AxiosInstance, AxiosResponse } from "axios";
 import axios from "axios";
 
-const envApiBaseUrl = import.meta.env.VITE_API_URL?.trim();
-
 const API_BASE_URL =
-  envApiBaseUrl &&
-  (!import.meta.env.PROD || !envApiBaseUrl.includes("localhost"))
-    ? envApiBaseUrl
-    : import.meta.env.DEV
-      ? "http://localhost:3000/api/v1"
-      : "/api/v1";
+  import.meta.env.VITE_API_URL || "http://localhost:3000/api/v1";
 
 export interface ApiResponse<T> {
   success: boolean;
