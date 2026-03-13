@@ -44,7 +44,9 @@ export const memosController = new Elysia({ prefix: '/memos', tags: ['memos'] })
 			const targetUsername = tenant ?? query.username
 			const currentUserId = user?.id ?? ''
 
-			const filters = parentId ? [eq(memos.parentId, parentId)] : [isNull(memos.parentId)]
+			const filters = parentId
+				? [eq(memos.parentId, parentId)]
+				: [isNull(memos.parentId)]
 
 			if (scope === 'self') {
 				if (!currentUserId) {
@@ -212,9 +214,7 @@ export const memosController = new Elysia({ prefix: '/memos', tags: ['memos'] })
 				cursorCreatedAt: t.Optional(t.String({ format: 'date-time' })),
 				cursorId: t.Optional(t.String({ format: 'uuid' })),
 				username: t.Optional(t.String()),
-				scope: t.Optional(
-					t.Union([t.Literal('self'), t.Literal('explore')]),
-				),
+				scope: t.Optional(t.Union([t.Literal('self'), t.Literal('explore')])),
 				date: t.Optional(t.String()),
 				parentId: t.Optional(t.String({ format: 'uuid' })),
 			}),
@@ -664,7 +664,11 @@ export const memosController = new Elysia({ prefix: '/memos', tags: ['memos'] })
 				if (targetUser) targetUserId = targetUser.id
 			}
 
-			if (!targetUserId) return status(404, fail({ message: '用户不存在', code: UserCode.NotFound, traceId }))
+			if (!targetUserId)
+				return status(
+					404,
+					fail({ message: '用户不存在', code: UserCode.NotFound, traceId }),
+				)
 
 			const { sql } = await import('drizzle-orm')
 
@@ -677,9 +681,11 @@ export const memosController = new Elysia({ prefix: '/memos', tags: ['memos'] })
 				.where(
 					and(
 						eq(memos.userId, targetUserId),
-						targetUserId === user?.id ? undefined : eq(memos.visibility, 'public'),
-						sql`created_at >= NOW() - INTERVAL '1 year'`
-					)
+						targetUserId === user?.id
+							? undefined
+							: eq(memos.visibility, 'public'),
+						sql`created_at >= NOW() - INTERVAL '1 year'`,
+					),
 				)
 				.groupBy(sql`DATE(created_at)`)
 				.orderBy(sql`DATE(created_at)`)
@@ -693,7 +699,7 @@ export const memosController = new Elysia({ prefix: '/memos', tags: ['memos'] })
 			detail: {
 				description: '获取用户 memos 热力图统计数据',
 			},
-		}
+		},
 	)
 	.get(
 		'/search',

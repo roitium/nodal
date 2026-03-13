@@ -214,7 +214,9 @@ export const authAPI = {
   ): Promise<AxiosResponse<ApiResponse<User>>> =>
     apiClient.patch("/auth/me", data),
 
-  getUserProfile: (username: string): Promise<AxiosResponse<ApiResponse<UserProfile>>> =>
+  getUserProfile: (
+    username: string,
+  ): Promise<AxiosResponse<ApiResponse<UserProfile>>> =>
     apiClient.get(`/auth/users/${username}`),
 };
 
