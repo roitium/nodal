@@ -30,6 +30,8 @@ import { useNavigate } from "react-router";
 import { ReplyDialog } from "./reply-dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "~/components/ui/tooltip";
 import { MemoComposer } from "~/components/memo-composer";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
+import { useLightboxHistory } from "~/hooks/use-lightbox-history";
 
 interface MemoCardProps {
   memo: Memo;
@@ -54,8 +56,10 @@ export function MemoCard({ memo, isDetail = false }: MemoCardProps) {
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(memo.content);
+  const [editVisibility, setEditVisibility] = useState<"public" | "private">(memo.visibility);
   const [isReplying, setIsReplying] = useState(false);
   const [editResetSignal, setEditResetSignal] = useState(0);
+  const { closeWithHistory } = useLightboxHistory(lightboxOpen, setLightboxOpen);
 
   const isOwner = currentUser?.id === memo.userId;
   const imageResources = memo.resources?.filter((r) => r.type.startsWith("image/")) || [];
@@ -82,16 +86,6 @@ export function MemoCard({ memo, isDetail = false }: MemoCardProps) {
     });
   };
 
-  const handleTogglePrivacy = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const isPublic = memo.visibility === "public";
-    updateMutation.mutate({
-      id: memo.id,
-      data: { visibility: isPublic ? "private" : "public" },
-      successMessage: isPublic ? t("memoCard.makePrivate") : t("memoCard.makePublic"),
-    });
-  };
-
   const handleSaveEdit = async ({
     content,
     resourceIds,
@@ -106,7 +100,7 @@ export function MemoCard({ memo, isDetail = false }: MemoCardProps) {
 
     await updateMutation.mutateAsync({
       id: memo.id,
-      data: { content, resources: resourceIds },
+      data: { content, visibility: editVisibility, resources: resourceIds },
       successMessage: t("memoCard.saveChanges"),
     });
     setIsEditing(false);
@@ -177,6 +171,7 @@ export function MemoCard({ memo, isDetail = false }: MemoCardProps) {
                     <DropdownMenuItem
                       onClick={() => {
                         setEditContent(memo.content);
+                        setEditVisibility(memo.visibility);
                         setEditResetSignal((prev) => prev + 1);
                         setIsEditing(true);
                       }}
@@ -187,13 +182,6 @@ export function MemoCard({ memo, isDetail = false }: MemoCardProps) {
                     <DropdownMenuItem onClick={handleTogglePin}>
                       <Pin className="w-4 h-4 mr-2" />
                       {memo.isPinned ? t("memoCard.unpin") : t("memoCard.pin")}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleTogglePrivacy}>
-                      {memo.visibility === "public" ? (
-                        <><Lock className="w-4 h-4 mr-2" /> {t("memoCard.makePrivate")}</>
-                      ) : (
-                        <><Globe className="w-4 h-4 mr-2" /> {t("memoCard.makePublic")}</>
-                      )}
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleDelete} className="text-destructive focus:text-destructive">
@@ -251,12 +239,23 @@ export function MemoCard({ memo, isDetail = false }: MemoCardProps) {
 
       <Lightbox
         open={lightboxOpen}
-        close={() => setLightboxOpen(false)}
+        close={closeWithHistory}
         index={lightboxIndex}
         slides={imageResources.map((img) => ({ src: img.externalLink }))}
+        controller={{ closeOnBackdropClick: true }}
       />
 
-      <Dialog open={isEditing} onOpenChange={setIsEditing}>
+      <Dialog
+        open={isEditing}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) {
+            setEditContent(memo.content);
+            setEditVisibility(memo.visibility);
+            setEditResetSignal((prev) => prev + 1);
+          }
+          setIsEditing(nextOpen);
+        }}
+      >
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>{t("memoCard.editMemo")}</DialogTitle>
@@ -273,14 +272,31 @@ export function MemoCard({ memo, isDetail = false }: MemoCardProps) {
             height={300}
             initialResources={memo.resources || []}
             resetSignal={`${memo.id}-${editResetSignal}-${isEditing ? "open" : "closed"}`}
+            leftActions={
+              <Select
+                value={editVisibility}
+                onValueChange={(val: "public" | "private") => setEditVisibility(val)}
+              >
+                <SelectTrigger className="w-[120px] h-9 bg-background">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="public">
+                    <div className="flex items-center gap-2">
+                      <Globe className="w-4 h-4 text-muted-foreground" />
+                      <span>{t("createMemo.public")}</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="private">
+                    <div className="flex items-center gap-2">
+                      <Lock className="w-4 h-4 text-muted-foreground" />
+                      <span>{t("createMemo.private")}</span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            }
             className="border-none"
-            showCancel
-            onCancel={() => {
-              setEditContent(memo.content);
-              setEditResetSignal((prev) => prev + 1);
-              setIsEditing(false);
-            }}
-            cancelLabel={t("memoCard.cancel")}
           />
         </DialogContent>
       </Dialog>

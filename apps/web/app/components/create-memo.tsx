@@ -54,9 +54,15 @@ export function CreateMemo() {
         placeholder={t("createMemo.placeholder")}
         height={isActive ? 200 : 80}
         hideToolbar={!isActive}
-        onFocus={() => setIsFocused(true)}
+        onFocusInside={() => setIsFocused(true)}
+        onBlurOutside={() => {
+          if (content.trim().length === 0 && attachmentCount === 0) {
+            setIsFocused(false);
+          }
+        }}
         onAttachmentCountChange={setAttachmentCount}
         resetSignal={resetSignal}
+        draftKey="create"
         leftActions={
           <Select
             value={visibility}
@@ -81,13 +87,6 @@ export function CreateMemo() {
             </SelectContent>
           </Select>
         }
-        showCancel={isActive}
-        onCancel={() => {
-          if (!content && attachmentCount === 0) {
-            setIsFocused(false);
-          }
-        }}
-        cancelLabel={t("memoCard.cancel") || "Cancel"}
         className="border-none shadow-none"
         footerClassName={isActive ? undefined : "hidden"}
       />

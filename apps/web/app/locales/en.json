@@ -37,6 +37,21 @@
     "empty": "No memos yet. Write your first one above!",
     "error": "Error loading timeline"
   },
+  "memoDetail": {
+    "title": "Memo",
+    "postReply": "Post your reply",
+    "noMoreReplies": "No more replies",
+    "loadError": "Failed to load memo."
+  },
+  "search": {
+    "placeholder": "Search memos...",
+    "emptyKeyword": "Enter a keyword to search memos",
+    "error": "Error searching memos",
+    "noResult": "No memos found matching \"{{keyword}}\""
+  },
+  "common": {
+    "failed": "Failed"
+  },
   "heatmap": {
     "less": "Less",
     "more": "More",

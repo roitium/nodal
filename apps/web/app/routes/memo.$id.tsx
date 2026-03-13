@@ -10,6 +10,7 @@ import { useEffect } from "react";
 import { useInView } from "react-intersection-observer";
 import { ReplyDialog } from "~/components/reply-dialog";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { Route } from "./+types/memo.$id";
 
 export function meta({}: Route.MetaArgs) {
@@ -22,6 +23,7 @@ export default function MemoDetailRoute() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [isReplying, setIsReplying] = useState(false);
+  const { t } = useTranslation();
 
   // Fetch the main memo
   const { data: memoResponse, isLoading: isLoadingMemo, isError } = useQuery({
@@ -82,7 +84,7 @@ export default function MemoDetailRoute() {
   if (isError || !memo) {
     return (
       <div className="text-center p-8 text-destructive">
-        Failed to load memo.
+        {t("memoDetail.loadError")}
       </div>
     );
   }
@@ -98,7 +100,7 @@ export default function MemoDetailRoute() {
         >
           <ArrowLeft className="w-5 h-5" />
         </Button>
-        <h1 className="text-xl font-bold">Memo</h1>
+        <h1 className="text-xl font-bold">{t("memoDetail.title")}</h1>
       </div>
 
       <div className="border border-border/50 rounded-xl bg-card overflow-hidden mb-6 shadow-sm">
@@ -110,7 +112,7 @@ export default function MemoDetailRoute() {
             className="w-full justify-start text-muted-foreground bg-background rounded-full h-10"
             onClick={() => setIsReplying(true)}
           >
-            Post your reply
+            {t("memoDetail.postReply")}
           </Button>
         </div>
       </div>
@@ -150,7 +152,7 @@ export default function MemoDetailRoute() {
             
             {!hasNextPage && (repliesData?.pages[0]?.data?.length ?? 0) > 0 && (
               <div className="text-center text-muted-foreground py-8 text-sm">
-                No more replies
+                {t("memoDetail.noMoreReplies")}
               </div>
             )}
           </>

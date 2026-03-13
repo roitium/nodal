@@ -5,6 +5,7 @@ import { Input } from "~/components/ui/input";
 import { Search } from "lucide-react";
 import { Skeleton } from "~/components/ui/skeleton";
 import { useDebounce } from "~/hooks/use-debounce";
+import { useTranslation } from "react-i18next";
 import type { Route } from "./+types/search";
 
 export function meta({}: Route.MetaArgs) {
@@ -17,6 +18,7 @@ export function meta({}: Route.MetaArgs) {
 export default function SearchRoute() {
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
+  const { t } = useTranslation();
 
   const { data: memos, isFetching, status } = useSearchMemos(debouncedSearchTerm);
 
@@ -25,7 +27,7 @@ export default function SearchRoute() {
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Search memos..."
+          placeholder={t("search.placeholder")}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="pl-9 bg-background"
@@ -49,13 +51,13 @@ export default function SearchRoute() {
           ))
         ) : debouncedSearchTerm === "" ? (
           <div className="text-center text-muted-foreground py-8 text-sm">
-            Enter a keyword to search memos
+            {t("search.emptyKeyword")}
           </div>
         ) : status === "error" ? (
-          <div className="text-center text-destructive p-4">Error searching memos</div>
+          <div className="text-center text-destructive p-4">{t("search.error")}</div>
         ) : memos?.length === 0 ? (
           <div className="text-center text-muted-foreground py-8 text-sm">
-            No memos found matching "{debouncedSearchTerm}"
+            {t("search.noResult", { keyword: debouncedSearchTerm })}
           </div>
         ) : (
           memos?.map((memo) => <MemoCard key={memo.id} memo={memo} />)

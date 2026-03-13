@@ -37,6 +37,21 @@
     "empty": "还没有记录，在上面写下你的第一条记录吧！",
     "error": "加载时间线失败"
   },
+  "memoDetail": {
+    "title": "记录",
+    "postReply": "发布你的回复",
+    "noMoreReplies": "没有更多回复了",
+    "loadError": "加载记录失败。"
+  },
+  "search": {
+    "placeholder": "搜索记录...",
+    "emptyKeyword": "请输入关键词进行搜索",
+    "error": "搜索记录失败",
+    "noResult": "未找到与 \"{{keyword}}\" 匹配的记录"
+  },
+  "common": {
+    "failed": "失败"
+  },
   "heatmap": {
     "less": "少",
     "more": "多",

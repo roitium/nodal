@@ -7,6 +7,8 @@ import Lightbox from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
 import { MemoEditor } from "~/components/memo-editor";
 import { cn } from "~/lib/utils";
+import { useLightboxHistory } from "~/hooks/use-lightbox-history";
+import { useTranslation } from "react-i18next";
 
 type UploadStatus = "uploading" | "uploaded" | "failed";
 
@@ -35,9 +37,9 @@ interface MemoComposerProps {
   resetSignal?: string | number;
   onAttachmentCountChange?: (count: number) => void;
   leftActions?: React.ReactNode;
-  showCancel?: boolean;
-  onCancel?: () => void;
-  cancelLabel?: string;
+  onBlurOutside?: () => void;
+  onFocusInside?: () => void;
+  draftKey?: string;
   className?: string;
   footerClassName?: string;
   submitClassName?: string;
@@ -82,9 +84,9 @@ export function MemoComposer({
   resetSignal,
   onAttachmentCountChange,
   leftActions,
-  showCancel = false,
-  onCancel,
-  cancelLabel = "Cancel",
+  onBlurOutside,
+  onFocusInside,
+  draftKey,
   className,
   footerClassName,
   submitClassName,
@@ -98,7 +100,11 @@ export function MemoComposer({
 
   const { uploadFile } = useUpload();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
   const attachmentsRef = useRef<ComposerAttachment[]>(attachments);
+  const loadedDraftRef = useRef(false);
+  const { closeWithHistory } = useLightboxHistory(lightboxOpen, setLightboxOpen);
+  const { t } = useTranslation();
 
   useEffect(() => {
     attachmentsRef.current = attachments;
@@ -138,6 +144,48 @@ export function MemoComposer({
     (value.trim().length > 0 || uploadedResources.length > 0) &&
     !isSubmitting &&
     !isUploadingAny;
+
+  useEffect(() => {
+    if (!draftKey || loadedDraftRef.current) return;
+    loadedDraftRef.current = true;
+
+    if (value.trim().length > 0) return;
+
+    const cached = localStorage.getItem(`memo-composer:${draftKey}`);
+    if (!cached) return;
+
+    try {
+      const parsed = JSON.parse(cached) as { content?: string };
+      if (parsed.content) {
+        onValueChange(parsed.content);
+      }
+    } catch {
+      localStorage.removeItem(`memo-composer:${draftKey}`);
+    }
+  }, [draftKey, onValueChange, value]);
+
+  useEffect(() => {
+    if (!draftKey) return;
+
+    const key = `memo-composer:${draftKey}`;
+
+    if (!value.trim()) {
+      localStorage.removeItem(key);
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      localStorage.setItem(
+        key,
+        JSON.stringify({
+          content: value,
+          updatedAt: Date.now(),
+        })
+      );
+    }, 200);
+
+    return () => window.clearTimeout(timer);
+  }, [draftKey, value]);
 
   const previewableImages = useMemo(
     () => attachments.filter((a) => a.type.startsWith("image/") && a.status !== "failed"),
@@ -228,10 +276,27 @@ export function MemoComposer({
       content: value,
       resourceIds: uploadedResources.map((r) => r.id),
     });
+
+    if (draftKey) {
+      localStorage.removeItem(`memo-composer:${draftKey}`);
+    }
   };
 
   return (
-    <div className={cn("rounded-xl border bg-card text-card-foreground overflow-hidden", className)}>
+    <div
+      ref={rootRef}
+      className={cn("rounded-xl border bg-card text-card-foreground overflow-hidden", className)}
+      onFocusCapture={onFocusInside}
+      onBlurCapture={(e) => {
+        const nextTarget = e.relatedTarget as Node | null;
+        if (nextTarget && rootRef.current?.contains(nextTarget)) return;
+
+        const nextElement = nextTarget as HTMLElement | null;
+        if (nextElement?.closest("[data-radix-popper-content-wrapper]")) return;
+
+        onBlurOutside?.();
+      }}
+    >
       <div className="p-2" onClick={onFocus}>
         <MemoEditor
           value={value}
@@ -273,7 +338,7 @@ export function MemoComposer({
                     )}
                     {attachment.status === "failed" && (
                       <div className="absolute inset-0 bg-destructive/20 border border-destructive flex items-center justify-center text-[10px] text-destructive font-medium">
-                        Failed
+                        {t("common.failed")}
                       </div>
                     )}
                   </button>
@@ -284,7 +349,7 @@ export function MemoComposer({
                       <Loader2 className="absolute top-1 right-1 w-3 h-3 animate-spin text-primary" />
                     )}
                     {attachment.status === "failed" && (
-                      <span className="absolute bottom-1 left-1 right-1 text-destructive font-medium">Failed</span>
+                      <span className="absolute bottom-1 left-1 right-1 text-destructive font-medium">{t("common.failed")}</span>
                     )}
                   </div>
                 )}
@@ -319,11 +384,6 @@ export function MemoComposer({
         </div>
 
         <div className="flex items-center gap-2">
-          {showCancel && (
-            <Button type="button" variant="ghost" size="sm" className="text-muted-foreground" onClick={onCancel}>
-              {cancelLabel}
-            </Button>
-          )}
           <Button type="button" size="sm" onClick={handleSubmit} className={cn("gap-2", submitClassName)} disabled={!canSubmit}>
             <Send className="w-4 h-4" />
             {isSubmitting ? submittingLabel : submitLabel}
@@ -333,9 +393,10 @@ export function MemoComposer({
 
       <Lightbox
         open={lightboxOpen}
-        close={() => setLightboxOpen(false)}
+        close={closeWithHistory}
         index={lightboxIndex}
         slides={previewableImages.map((img) => ({ src: img.previewUrl }))}
+        controller={{ closeOnBackdropClick: true }}
       />
     </div>
   );

@@ -48,12 +48,13 @@ export function ReplyDialog({ memo, open, onOpenChange }: ReplyDialogProps) {
           onValueChange={setContent}
           onSubmit={handleSubmit}
           isSubmitting={createMutation.isPending}
-          submitLabel={t("createMemo.reply") || "Reply"}
-          submittingLabel={t("createMemo.replying") || "Replying..."}
-          placeholder={t("createMemo.replyPlaceholder") || "Post your reply"}
+          submitLabel={t("createMemo.reply")}
+          submittingLabel={t("createMemo.replying")}
+          placeholder={t("createMemo.replyPlaceholder")}
           height={150}
           autoFocus
           resetSignal={resetSignal}
+          draftKey={`reply:${memo.id}`}
           className="border-none rounded-none"
           submitClassName="rounded-full px-6 font-bold"
           uploadButtonClassName="rounded-full"
