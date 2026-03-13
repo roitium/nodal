@@ -4,7 +4,8 @@ import axios from "axios";
 const envApiBaseUrl = import.meta.env.VITE_API_URL?.trim();
 
 const API_BASE_URL =
-  envApiBaseUrl && (!import.meta.env.PROD || !envApiBaseUrl.includes("localhost"))
+  envApiBaseUrl &&
+  (!import.meta.env.PROD || !envApiBaseUrl.includes("localhost"))
     ? envApiBaseUrl
     : import.meta.env.DEV
       ? "http://localhost:3000/api/v1"
@@ -144,21 +145,21 @@ export interface RecordUploadData {
 type TypedAxiosInstance = AxiosInstance & {
   get<TData = any, TResponse = AxiosResponse<ApiResponse<TData>>>(
     url: string,
-    config?: Parameters<AxiosInstance["get"]>[1]
+    config?: Parameters<AxiosInstance["get"]>[1],
   ): Promise<TResponse>;
   post<TData = any, TRequest = any>(
     url: string,
     data?: TRequest,
-    config?: Parameters<AxiosInstance["post"]>[2]
+    config?: Parameters<AxiosInstance["post"]>[2],
   ): Promise<AxiosResponse<ApiResponse<TData>>>;
   patch<TData = any, TRequest = any>(
     url: string,
     data?: TRequest,
-    config?: Parameters<AxiosInstance["patch"]>[2]
+    config?: Parameters<AxiosInstance["patch"]>[2],
   ): Promise<AxiosResponse<ApiResponse<TData>>>;
   delete<TData = any>(
     url: string,
-    config?: Parameters<AxiosInstance["delete"]>[1]
+    config?: Parameters<AxiosInstance["delete"]>[1],
   ): Promise<AxiosResponse<ApiResponse<TData>>>;
 };
 
@@ -185,7 +186,7 @@ apiClient.interceptors.response.use(
       window.location.href = "/login";
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 export const authAPI = {
@@ -193,17 +194,17 @@ export const authAPI = {
     apiClient.get("/auth/me"),
 
   login: (
-    data: LoginData
+    data: LoginData,
   ): Promise<AxiosResponse<ApiResponse<LoginResponseData>>> =>
     apiClient.post("/auth/login", data),
 
   register: (
-    data: RegisterData
+    data: RegisterData,
   ): Promise<AxiosResponse<ApiResponse<LoginResponseData>>> =>
     apiClient.post("/auth/register", data),
 
   updateProfile: (
-    data: UpdateProfileData
+    data: UpdateProfileData,
   ): Promise<AxiosResponse<ApiResponse<User>>> =>
     apiClient.patch("/auth/me", data),
 };
@@ -214,11 +215,13 @@ export interface MemoStats {
 }
 
 export const memosAPI = {
-  getStats: (username?: string): Promise<AxiosResponse<ApiResponse<MemoStats[]>>> =>
+  getStats: (
+    username?: string,
+  ): Promise<AxiosResponse<ApiResponse<MemoStats[]>>> =>
     apiClient.get("/memos/stats", { params: { username } }),
 
   getTimeline: (
-    params?: MemoParams
+    params?: MemoParams,
   ): Promise<AxiosResponse<ApiResponse<TimelineResponse>>> =>
     apiClient.get("/memos/timeline", { params }),
 
@@ -226,13 +229,13 @@ export const memosAPI = {
     apiClient.get(`/memos/${id}`),
 
   createMemo: (
-    data: CreateMemoData
+    data: CreateMemoData,
   ): Promise<AxiosResponse<ApiResponse<Memo>>> =>
     apiClient.post("/memos/publish", data),
 
   updateMemo: (
     id: string,
-    data: UpdateMemoData
+    data: UpdateMemoData,
   ): Promise<AxiosResponse<ApiResponse<boolean>>> =>
     apiClient.patch(`/memos/${id}`, data),
 
@@ -246,12 +249,12 @@ export const memosAPI = {
 export const resourcesAPI = {
   getUploadUrl: (
     fileType: string,
-    ext: string
+    ext: string,
   ): Promise<AxiosResponse<ApiResponse<UploadUrlResponse>>> =>
     apiClient.get("/resources/upload-url", { params: { fileType, ext } }),
 
   recordUpload: (
-    data: RecordUploadData
+    data: RecordUploadData,
   ): Promise<AxiosResponse<ApiResponse<Resource>>> =>
     apiClient.post("/resources/record-upload", data),
 
