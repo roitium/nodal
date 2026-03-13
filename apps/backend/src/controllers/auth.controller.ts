@@ -233,3 +233,48 @@ export const authController = new Elysia({ prefix: '/auth', tags: ['auth'] })
 			},
 		},
 	)
+	.get(
+		'/me',
+		async ({ user, status, db, traceId }) => {
+			if (!user)
+				return status(
+					401,
+					fail({
+						message: '请先登录',
+						code: GeneralCode.NeedLogin,
+						traceId,
+					}),
+				)
+
+			const userRecord = await db.query.users.findFirst({
+				where: eq(users.id, user.id),
+				columns: {
+					passwordHash: false,
+				},
+			})
+
+			if (!userRecord)
+				return status(
+					404,
+					fail({
+						message: '用户不存在',
+						code: AuthCode.NotFound,
+						traceId,
+					}),
+				)
+
+			return status(
+				200,
+				success({
+					data: userRecord,
+					traceId,
+				}),
+			)
+		},
+		{
+			detail: {
+				description: '获取当前用户信息',
+			},
+		},
+	)
+

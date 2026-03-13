@@ -6,15 +6,23 @@ import {
   Scripts,
   ScrollRestoration,
 } from "react-router";
-import { QueryClientProvider } from '@tanstack/react-query'
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { Toaster } from '~/components/ui/sonner'
 
 import type { Route } from "./+types/root";
 import "./app.css";
-import { queryClient } from "./lib/query-client";
+import "./lib/i18n"; // Import i18n config
+import { queryClient, persister } from "./lib/query-client";
+import { registerSW } from 'virtual:pwa-register';
+
+// Register Service Worker for PWA
+if (typeof window !== 'undefined') {
+  registerSW({ immediate: true });
+}
 
 export const links: Route.LinksFunction = () => [
+  { rel: "apple-touch-icon", href: "/apple-touch-icon.png", sizes: "180x180" },
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
   {
     rel: "preconnect",
@@ -27,9 +35,12 @@ export const links: Route.LinksFunction = () => [
   },
 ];
 
+import { ThemeProvider } from "~/components/theme-provider";
+import { TooltipProvider } from "~/components/ui/tooltip";
+
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -37,8 +48,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Links />
       </head>
       <body>
-        {children}
-        <Toaster />
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          {children}
+          <Toaster />
+        </ThemeProvider>
         <ScrollRestoration />
         <Scripts />
       </body>
@@ -46,12 +59,25 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
+export function HydrateFallback() {
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-background">
+      <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+    </div>
+  );
+}
+
 export default function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <Outlet />
+    <PersistQueryClientProvider
+      client={queryClient}
+      persistOptions={{ persister }}
+    >
+      <TooltipProvider>
+        <Outlet />
+      </TooltipProvider>
       <ReactQueryDevtools initialIsOpen={false} />
-    </QueryClientProvider>
+    </PersistQueryClientProvider>
   );
 }
 

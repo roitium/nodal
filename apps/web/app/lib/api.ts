@@ -1,7 +1,7 @@
 import type { AxiosInstance, AxiosResponse } from "axios";
 import axios from "axios";
 
-const API_BASE_URL = "https://nodal.roitium.com/api/v1";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api/v1";
 
 export interface ApiResponse<T> {
   success: boolean;
@@ -24,9 +24,12 @@ export interface TimelineResponse {
 }
 
 export interface UploadUrlResponse {
-  signedUrl: string;
-  token: string;
+  uploadUrl: string;
+  signature: string;
   path: string;
+  headers?: {
+    token: string;
+  };
 }
 
 export interface UserResourcesResponse {
@@ -78,6 +81,8 @@ export interface MemoParams {
   cursorCreatedAt?: string;
   cursorId?: string;
   username?: string;
+  date?: string;
+  parentId?: string;
 }
 
 export interface CreateMemoData {
@@ -177,6 +182,9 @@ apiClient.interceptors.response.use(
 );
 
 export const authAPI = {
+  getMe: (): Promise<AxiosResponse<ApiResponse<User>>> =>
+    apiClient.get("/auth/me"),
+
   login: (
     data: LoginData
   ): Promise<AxiosResponse<ApiResponse<LoginResponseData>>> =>
@@ -193,7 +201,15 @@ export const authAPI = {
     apiClient.patch("/auth/me", data),
 };
 
+export interface MemoStats {
+  date: string;
+  count: number;
+}
+
 export const memosAPI = {
+  getStats: (username?: string): Promise<AxiosResponse<ApiResponse<MemoStats[]>>> =>
+    apiClient.get("/memos/stats", { params: { username } }),
+
   getTimeline: (
     params?: MemoParams
   ): Promise<AxiosResponse<ApiResponse<TimelineResponse>>> =>

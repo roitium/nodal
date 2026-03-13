@@ -1,6 +1,7 @@
 {
   "name": "nodal-monorepo",
   "private": true,
+  "packageManager": "bun@1.3.5",
   "workspaces": [
     "apps/*",
     "packages/*"

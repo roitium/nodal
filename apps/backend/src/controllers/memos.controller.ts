@@ -39,12 +39,12 @@ export const memosController = new Elysia({ prefix: '/memos', tags: ['memos'] })
 		'/timeline',
 		async ({ user, query, status, tenant, db, traceId }) => {
 			const limit = query.limit ? parseInt(query.limit) : 20
-			const { cursorCreatedAt, cursorId } = query
+			const { cursorCreatedAt, cursorId, date, parentId } = query
 			// 优先使用子域名作为用户名进行查询
 			const targetUsername = tenant ?? query.username
 			const currentUserId = user?.id ?? ''
 
-			const filters = [isNull(memos.parentId)]
+			const filters = parentId ? [eq(memos.parentId, parentId)] : [isNull(memos.parentId)]
 
 			if (targetUsername) {
 				const targetUser = await db.query.users.findFirst({
@@ -79,6 +79,11 @@ export const memosController = new Elysia({ prefix: '/memos', tags: ['memos'] })
 				}
 			}
 
+			if (date) {
+				const { sql } = await import('drizzle-orm')
+				filters.push(eq(sql`DATE(${memos.createdAt})`, date))
+			}
+
 			if (cursorCreatedAt && cursorId) {
 				const cursorDate = new Date(cursorCreatedAt)
 				filters.push(
@@ -88,7 +93,10 @@ export const memosController = new Elysia({ prefix: '/memos', tags: ['memos'] })
 					)!,
 				)
 				// 当使用游标分页时，排除置顶内容（置顶内容只在第一页显示）
-				filters.push(eq(memos.isPinned, false))
+				// 并且如果是按照日期筛选，我们可能也不需要特殊的置顶逻辑，但保持原样。
+				if (!date) {
+					filters.push(eq(memos.isPinned, false))
+				}
 			}
 
 			const data = await db.query.memos.findMany({
@@ -189,6 +197,8 @@ export const memosController = new Elysia({ prefix: '/memos', tags: ['memos'] })
 				cursorCreatedAt: t.Optional(t.String({ format: 'date-time' })),
 				cursorId: t.Optional(t.String({ format: 'uuid' })),
 				username: t.Optional(t.String()),
+				date: t.Optional(t.String()),
+				parentId: t.Optional(t.String({ format: 'uuid' })),
 			}),
 			detail: {
 				description: `获取 memos 列表\n1. 支持通过 子域名/username=xxx 查询某个用户的公开笔记。如果用户已登录，则为该用户所有笔记\n2. 不提供用户名时，查询所有用户的公开笔记 + 当前用户的私密笔记`,
@@ -622,6 +632,50 @@ export const memosController = new Elysia({ prefix: '/memos', tags: ['memos'] })
 				createdAt: t.Optional(t.String({ format: 'date-time' })),
 			}),
 		},
+	)
+	.get(
+		'/stats',
+		async ({ user, query, db, tenant, status, traceId }) => {
+			const targetUsername = tenant ?? query.username
+			let targetUserId = user?.id
+
+			if (targetUsername) {
+				const targetUser = await db.query.users.findFirst({
+					where: eq(users.username, targetUsername),
+				})
+				if (targetUser) targetUserId = targetUser.id
+			}
+
+			if (!targetUserId) return status(404, fail({ message: '用户不存在', code: UserCode.NotFound, traceId }))
+
+			const { sql } = await import('drizzle-orm')
+
+			const stats = await db
+				.select({
+					date: sql<string>`DATE(created_at)`,
+					count: sql<number>`CAST(COUNT(*) AS INTEGER)`,
+				})
+				.from(memos)
+				.where(
+					and(
+						eq(memos.userId, targetUserId),
+						targetUserId === user?.id ? undefined : eq(memos.visibility, 'public'),
+						sql`created_at >= NOW() - INTERVAL '1 year'`
+					)
+				)
+				.groupBy(sql`DATE(created_at)`)
+				.orderBy(sql`DATE(created_at)`)
+
+			return success({ data: stats, traceId })
+		},
+		{
+			query: t.Object({
+				username: t.Optional(t.String()),
+			}),
+			detail: {
+				description: '获取用户 memos 热力图统计数据',
+			},
+		}
 	)
 	.get(
 		'/search',

@@ -1,128 +1,66 @@
-import { useState, useEffect } from 'react'
-import { Header } from '~/components/header'
-import { Input } from '~/components/ui/input'
-import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
-import { Badge } from '~/components/ui/badge'
-import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
-import { formatDistanceToNow } from 'date-fns'
-import { useSearchMemos } from '~/hooks/use-queries'
+import { useState } from "react";
+import { useSearchMemos } from "~/hooks/queries/use-timeline";
+import { MemoCard } from "~/components/memo-card";
+import { Input } from "~/components/ui/input";
+import { Search } from "lucide-react";
+import { Skeleton } from "~/components/ui/skeleton";
+import { useDebounce } from "~/hooks/use-debounce";
+import type { Route } from "./+types/search";
 
-interface SearchResult {
-  id: string
-  content: string
-  createdAt: string
-  visibility: string
-  isPinned: boolean
-  author: {
-    id: string
-    username: string
-    displayName?: string
-    avatarUrl?: string
-  }
-  resources?: Array<{
-    id: string
-    filename: string
-  }>
+export function meta({}: Route.MetaArgs) {
+  return [
+    { title: "Search Memos - Nodal" },
+    { name: "description", content: "Search your memos." },
+  ];
 }
 
-export default function SearchPage() {
-  const [searchQuery, setSearchQuery] = useState('')
-  const [debouncedQuery, setDebouncedQuery] = useState('')
-  
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedQuery(searchQuery)
-    }, 500)
-    return () => clearTimeout(timer)
-  }, [searchQuery])
+export default function SearchRoute() {
+  const [searchTerm, setSearchTerm] = useState("");
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
-  const { data: searchResults, isLoading } = useSearchMemos(debouncedQuery)
-
-  const getInitials = (name: string) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-  }
+  const { data: memos, isFetching, status } = useSearchMemos(debouncedSearchTerm);
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      
-      <main className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl font-bold mb-8">Search Memos</h1>
-          
-          <div className="mb-8">
-            <div className="relative">
-              <Input
-                type="text"
-                placeholder="Search memos... (minimum 2 characters)"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full"
-              />
+    <div className="space-y-6 pb-20">
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Search memos..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-9 bg-background"
+        />
+      </div>
+
+      <div className="space-y-4">
+        {isFetching ? (
+          Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="flex gap-3 p-4 border-b border-border/50">
+              <Skeleton className="h-10 w-10 rounded-full shrink-0 mt-1" />
+              <div className="flex-1 min-w-0 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-4 w-[130px]" />
+                  <Skeleton className="h-3 w-[90px]" />
+                </div>
+                <Skeleton className="h-4 w-[90%]" />
+                <Skeleton className="h-4 w-[70%]" />
+              </div>
             </div>
+          ))
+        ) : debouncedSearchTerm === "" ? (
+          <div className="text-center text-muted-foreground py-8 text-sm">
+            Enter a keyword to search memos
           </div>
-
-          {isLoading && (
-            <div className="text-center py-8 text-muted-foreground">Searching...</div>
-          )}
-
-          {searchResults && searchResults.data?.data?.length > 0 && (
-            <div className="space-y-4">
-              {searchResults.data.data.map((memo: any) => (
-                <Card key={memo.id} className="hover:shadow-md transition-shadow">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center space-x-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={memo.author.avatarUrl} alt={memo.author.username} />
-                        <AvatarFallback>{getInitials(memo.author.displayName || memo.author.username)}</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <p className="font-medium">{memo.author.displayName || memo.author.username}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {formatDistanceToNow(new Date(memo.createdAt), { addSuffix: true })}
-                        </p>
-                      </div>
-                      {memo.visibility === 'private' && (
-                        <Badge variant="secondary">Private</Badge>
-                      )}
-                      {memo.isPinned && (
-                        <Badge variant="default">Pinned</Badge>
-                      )}
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="prose prose-sm max-w-none">
-                      <p className="whitespace-pre-wrap">{memo.content}</p>
-                    </div>
-                    
-                    {memo.resources && memo.resources.length > 0 && (
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        {memo.resources.map((resource: any) => (
-                          <Badge key={resource.id} variant="outline">
-                            📎 {resource.filename}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-
-          {searchResults && searchResults.data?.data?.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">No memos found for "{debouncedQuery}"</p>
-            </div>
-          )}
-
-          {!searchResults && debouncedQuery.length >= 2 && !isLoading && (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">Start typing to search for memos</p>
-            </div>
-          )}
-        </div>
-      </main>
+        ) : status === "error" ? (
+          <div className="text-center text-destructive p-4">Error searching memos</div>
+        ) : memos?.length === 0 ? (
+          <div className="text-center text-muted-foreground py-8 text-sm">
+            No memos found matching "{debouncedSearchTerm}"
+          </div>
+        ) : (
+          memos?.map((memo) => <MemoCard key={memo.id} memo={memo} />)
+        )}
+      </div>
     </div>
-  )
+  );
 }
