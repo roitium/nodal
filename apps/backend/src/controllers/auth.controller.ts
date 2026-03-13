@@ -214,10 +214,27 @@ export const authController = new Elysia({ prefix: '/auth', tags: ['auth'] })
 				})
 				.where(eq(users.id, user.id))
 
+			const updatedUserRecord = await db.query.users.findFirst({
+				where: eq(users.id, user.id),
+				columns: {
+					passwordHash: false,
+				},
+			})
+
+			if (!updatedUserRecord)
+				return status(
+					404,
+					fail({
+						message: '用户不存在',
+						code: AuthCode.NotFound,
+						traceId,
+					}),
+				)
+
 			return status(
 				200,
 				success({
-					data: user,
+					data: updatedUserRecord,
 					traceId,
 				}),
 			)
@@ -277,4 +294,3 @@ export const authController = new Elysia({ prefix: '/auth', tags: ['auth'] })
 			},
 		},
 	)
-

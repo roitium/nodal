@@ -103,6 +103,7 @@ export function MemoComposer({
   const rootRef = useRef<HTMLDivElement>(null);
   const attachmentsRef = useRef<ComposerAttachment[]>(attachments);
   const loadedDraftRef = useRef(false);
+  const pointerDownInsideRef = useRef(false);
   const { closeWithHistory } = useLightboxHistory(lightboxOpen, setLightboxOpen);
   const { t } = useTranslation();
 
@@ -132,6 +133,18 @@ export function MemoComposer({
           URL.revokeObjectURL(attachment.previewUrl);
         }
       }
+    };
+  }, []);
+
+  useEffect(() => {
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as Node | null;
+      pointerDownInsideRef.current = !!(target && rootRef.current?.contains(target));
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown, true);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown, true);
     };
   }, []);
 
@@ -290,6 +303,7 @@ export function MemoComposer({
       onBlurCapture={(e) => {
         const nextTarget = e.relatedTarget as Node | null;
         if (nextTarget && rootRef.current?.contains(nextTarget)) return;
+        if (!nextTarget && pointerDownInsideRef.current) return;
 
         const nextElement = nextTarget as HTMLElement | null;
         if (nextElement?.closest("[data-radix-popper-content-wrapper]")) return;

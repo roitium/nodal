@@ -6,20 +6,18 @@ import {
   Scripts,
   ScrollRestoration,
 } from "react-router";
+import { useEffect } from "react";
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { Toaster } from '~/components/ui/sonner'
+import { toast } from "sonner";
 
 import type { Route } from "./+types/root";
 import "./app.css";
 import "./lib/i18n"; // Import i18n config
+import i18n from "./lib/i18n";
 import { queryClient, persister } from "./lib/query-client";
 import { registerSW } from 'virtual:pwa-register';
-
-// Register Service Worker for PWA
-if (typeof window !== 'undefined') {
-  registerSW({ immediate: true });
-}
 
 export const links: Route.LinksFunction = () => [
   { rel: "apple-touch-icon", href: "/apple-touch-icon.png", sizes: "180x180" },
@@ -37,6 +35,25 @@ export const links: Route.LinksFunction = () => [
 
 import { ThemeProvider } from "~/components/theme-provider";
 import { TooltipProvider } from "~/components/ui/tooltip";
+
+function PwaUpdateListener() {
+  useEffect(() => {
+    const updateSW = registerSW({
+      immediate: true,
+      onNeedRefresh() {
+        toast.message(i18n.t("pwa.updateAvailableTitle"), {
+          description: i18n.t("pwa.updateAvailableDesc"),
+          action: {
+            label: i18n.t("pwa.updateAction"),
+            onClick: () => updateSW(true),
+          },
+        });
+      },
+    });
+  }, []);
+
+  return null;
+}
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -73,6 +90,7 @@ export default function App() {
       client={queryClient}
       persistOptions={{ persister }}
     >
+      <PwaUpdateListener />
       <TooltipProvider>
         <Outlet />
       </TooltipProvider>

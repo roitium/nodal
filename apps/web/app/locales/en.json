@@ -3,8 +3,29 @@
     "home": "Home",
     "search": "Search",
     "settings": "Settings",
+    "profile": "Profile",
+    "installApp": "Install App",
     "login": "Login",
     "logout": "Logout"
+  },
+  "profile": {
+    "title": "Profile",
+    "editTitle": "Edit Profile",
+    "editDescription": "Update your public profile information.",
+    "username": "Username",
+    "email": "Email",
+    "displayName": "Display Name",
+    "displayNamePlaceholder": "Your display name",
+    "avatarUrl": "Avatar URL",
+    "bio": "Bio",
+    "bioPlaceholder": "Tell people something about yourself",
+    "save": "Save Profile",
+    "saving": "Saving..."
+  },
+  "pwa": {
+    "updateAvailableTitle": "Update available",
+    "updateAvailableDesc": "A new version is ready. Refresh now to update.",
+    "updateAction": "Update"
   },
   "createMemo": {
     "placeholder": "What's on your mind?",

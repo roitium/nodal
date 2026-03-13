@@ -12,12 +12,13 @@ import {
   SidebarMenuItem,
 } from "~/components/ui/sidebar";
 import { useUser } from "~/hooks/queries/use-user";
-import { Home, Search, Settings, LogOut, Download } from "lucide-react";
+import { Home, Search, Settings, LogOut, Download, UserRound } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import { useTranslation } from "react-i18next";
@@ -28,7 +29,7 @@ export function AppSidebar() {
   const { data: user } = useUser();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { isInstallable, promptInstall } = usePWAInstall();
+  const { isInstallable, isInstalled, promptInstall } = usePWAInstall();
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -72,15 +73,6 @@ export function AppSidebar() {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              
-              {isInstallable && (
-                <SidebarMenuItem>
-                  <SidebarMenuButton onClick={promptInstall} className="text-primary hover:text-primary hover:bg-primary/10">
-                    <Download className="w-4 h-4" />
-                    <span>Install App</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -105,6 +97,19 @@ export function AppSidebar() {
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-56">
+              <DropdownMenuItem asChild>
+                <Link to="/profile">
+                  <UserRound className="w-4 h-4 mr-2" />
+                  {t("sidebar.profile")}
+                </Link>
+              </DropdownMenuItem>
+              {!isInstalled && isInstallable && (
+                <DropdownMenuItem onClick={promptInstall}>
+                  <Download className="w-4 h-4 mr-2" />
+                  {t("sidebar.installApp")}
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
                 <LogOut className="w-4 h-4 mr-2" />
                 {t("sidebar.logout")}
