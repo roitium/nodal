@@ -39,25 +39,25 @@ export default function HomeRoute() {
   }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   return (
-    <div className="pb-20">
+    <div className="stagger-fade pb-20">
       <CreateMemo />
 
       {dateFilter && (
-        <div className="mb-6 flex items-center gap-2">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium">
-            <Calendar className="w-4 h-4" />
+        <div className="mb-5 flex items-center gap-2 md:mb-6">
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/12 px-3 py-1 text-sm font-medium text-primary">
+            <Calendar className="h-4 w-4" />
             <span>{dateFilter}</span>
             <button 
               onClick={() => navigate("/")}
-              className="ml-1 hover:bg-primary/20 rounded-full p-0.5 transition-colors"
+              className="touch-target ml-1 rounded-full p-0.5 transition-colors hover:bg-primary/20"
             >
-              <X className="w-3.5 h-3.5" />
+              <X className="h-3.5 w-3.5" />
             </button>
           </div>
         </div>
       )}
 
-      <div className="space-y-4">
+      <div className="space-y-3 md:space-y-4">
         {status === "pending" ? (
           Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className="flex gap-3 p-4 border-b border-border/50">
@@ -86,7 +86,7 @@ export default function HomeRoute() {
             
             {hasNextPage && (
               <div ref={ref} className="flex justify-center pt-4">
-                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                <div className="h-6 w-6 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
               </div>
             )}
             

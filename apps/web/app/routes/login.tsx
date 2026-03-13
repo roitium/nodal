@@ -63,11 +63,11 @@ export default function LoginRoute() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/40 p-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <Card className="surface-card page-reveal w-full max-w-md rounded-2xl border-border/75 shadow-lg">
         <CardHeader className="text-center">
-          <img src="/icon.png" alt="Nodal Logo" className="w-12 h-12 rounded-xl mx-auto mb-4 object-cover" />
-          <CardTitle className="text-2xl font-bold tracking-tight">
+          <img src="/icon.png" alt="Nodal Logo" className="mx-auto mb-4 h-12 w-12 rounded-xl object-cover pulse-halo" />
+          <CardTitle className="app-heading text-2xl font-semibold tracking-tight">
             Welcome to Nodal
           </CardTitle>
           <CardDescription>

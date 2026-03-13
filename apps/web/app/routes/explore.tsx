@@ -26,8 +26,8 @@ export default function ExploreRoute() {
   }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   return (
-    <div className="pb-20 space-y-4">
-      <h1 className="text-xl font-semibold">{t("sidebar.explore")}</h1>
+    <div className="stagger-fade space-y-4 pb-20">
+      <h1 className="app-heading text-2xl font-semibold">{t("sidebar.explore")}</h1>
 
       {status === "pending" ? (
         Array.from({ length: 3 }).map((_, i) => (
@@ -57,7 +57,7 @@ export default function ExploreRoute() {
 
           {hasNextPage && (
             <div ref={ref} className="flex justify-center pt-4">
-              <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+              <div className="h-6 w-6 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
             </div>
           )}
 

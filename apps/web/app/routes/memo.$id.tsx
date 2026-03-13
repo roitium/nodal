@@ -56,7 +56,7 @@ export default function MemoDetailRoute() {
 
   if (isLoadingMemo) {
     return (
-      <div className="pb-20">
+      <div className="stagger-fade pb-20">
         <div className="flex items-center gap-4 mb-4 px-2">
           <Skeleton className="w-10 h-10 rounded-full" />
           <Skeleton className="h-6 w-28" />
@@ -90,26 +90,26 @@ export default function MemoDetailRoute() {
   }
 
   return (
-    <div className="pb-20">
-      <div className="flex items-center gap-4 mb-4 px-2">
+    <div className="stagger-fade pb-20">
+      <div className="mb-4 flex items-center gap-4 px-2">
         <Button 
           variant="ghost" 
           size="icon" 
           onClick={() => navigate(-1)}
-          className="rounded-full hover:bg-muted"
+          className="touch-target rounded-full hover:bg-muted"
         >
-          <ArrowLeft className="w-5 h-5" />
+          <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h1 className="text-xl font-bold">{t("memoDetail.title")}</h1>
+        <h1 className="app-heading text-xl font-semibold">{t("memoDetail.title")}</h1>
       </div>
 
-      <div className="border border-border/50 rounded-xl bg-card overflow-hidden mb-6 shadow-sm">
+      <div className="surface-card mb-6 overflow-hidden rounded-2xl">
         <MemoCard memo={memo} isDetail={true} />
         
-        <div className="p-4 border-t border-border/50 bg-muted/20">
+        <div className="border-t border-border/50 bg-muted/20 p-4">
           <Button 
             variant="outline" 
-            className="w-full justify-start text-muted-foreground bg-background rounded-full h-10"
+            className="h-11 w-full justify-start rounded-full bg-background text-muted-foreground"
             onClick={() => setIsReplying(true)}
           >
             {t("memoDetail.postReply")}
@@ -146,7 +146,7 @@ export default function MemoDetailRoute() {
             
             {hasNextPage && (
               <div ref={ref} className="flex justify-center pt-4">
-                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                <div className="h-6 w-6 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
               </div>
             )}
             

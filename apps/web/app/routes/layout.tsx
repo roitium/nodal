@@ -20,14 +20,16 @@ export default function Layout() {
   }, [navigate, location.pathname]);
 
   return (
-    <SidebarProvider>
+    <SidebarProvider className="bg-transparent">
       <AppSidebar />
-      <main className="flex-1 min-h-screen relative">
-        <header className="h-14 border-b flex items-center px-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10 fixed top-0 w-full lg:w-[calc(100%-var(--sidebar-width))]">
-          <SidebarTrigger />
+      <main className="relative flex-1 min-h-svh">
+        <header className="fixed top-0 z-20 flex h-14 w-full items-center border-b border-border/70 bg-background/88 px-3 backdrop-blur-xl supports-backdrop-filter:bg-background/65 md:px-4 lg:w-[calc(100%-var(--sidebar-width))]">
+          <SidebarTrigger className="touch-target rounded-lg transition-colors hover:bg-accent/80" />
         </header>
-        <div className="max-w-3xl mx-auto w-full p-4 md:p-6 pb-24 mt-14">
-          <Outlet />
+        <div className="mx-auto mt-14 w-full max-w-[52rem] px-3 pb-24 pt-4 sm:px-4 md:px-6 md:pt-6">
+          <div className="page-reveal">
+            <Outlet />
+          </div>
         </div>
       </main>
     </SidebarProvider>

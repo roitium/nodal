@@ -39,8 +39,8 @@ export function CreateMemo() {
   return (
     <div 
       className={cn(
-        "mb-8 rounded-xl border bg-card text-card-foreground shadow-sm transition-all duration-200 overflow-hidden",
-        isActive ? "ring-2 ring-primary/20" : "hover:border-primary/50"
+        "surface-card interactive-lift mb-6 overflow-hidden rounded-2xl text-card-foreground md:mb-8",
+        isActive ? "ring-2 ring-primary/25" : "hover:border-primary/45"
       )}
       onClick={() => setIsFocused(true)}
     >
@@ -52,7 +52,7 @@ export function CreateMemo() {
         submitLabel={t("createMemo.post")}
         submittingLabel={t("createMemo.posting")}
         placeholder={t("createMemo.placeholder")}
-        height={isActive ? 200 : 80}
+        height={isActive ? 220 : 92}
         hideToolbar={!isActive}
         onFocusInside={() => setIsFocused(true)}
         onBlurOutside={() => {
@@ -68,19 +68,19 @@ export function CreateMemo() {
             value={visibility}
             onValueChange={(val: "public" | "private") => setVisibility(val)}
           >
-            <SelectTrigger className="w-[120px] h-9 bg-background">
+            <SelectTrigger className="h-10 w-[128px] rounded-full bg-background/70 backdrop-blur-sm">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="public">
                 <div className="flex items-center gap-2">
-                  <Globe className="w-4 h-4 text-muted-foreground" />
+                  <Globe className="h-4 w-4 text-primary/85" />
                   <span>{t("createMemo.public")}</span>
                 </div>
               </SelectItem>
               <SelectItem value="private">
                 <div className="flex items-center gap-2">
-                  <Lock className="w-4 h-4 text-muted-foreground" />
+                  <Lock className="h-4 w-4 text-primary/85" />
                   <span>{t("createMemo.private")}</span>
                 </div>
               </SelectItem>

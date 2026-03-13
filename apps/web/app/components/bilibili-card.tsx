@@ -176,11 +176,11 @@ export function BilibiliCard({
       target="_blank"
       rel="noreferrer"
       className={cn(
-        "not-prose my-4 flex overflow-hidden rounded-2xl border border-border/70 bg-card text-card-foreground shadow-sm transition-colors hover:bg-accent/20",
+        "surface-card interactive-lift not-prose my-4 flex flex-col overflow-hidden rounded-2xl text-card-foreground sm:flex-row",
         className
       )}
     >
-      <div className="flex w-36 min-h-28 shrink-0 self-stretch items-center justify-center overflow-hidden bg-muted">
+      <div className="flex h-40 w-full shrink-0 items-center justify-center overflow-hidden bg-muted sm:min-h-28 sm:w-36 sm:self-stretch">
         {coverUrl ? (
           <img src={coverUrl} alt={title} className="block h-full w-full object-cover" />
         ) : (
@@ -188,11 +188,11 @@ export function BilibiliCard({
         )}
       </div>
       <div className="min-w-0 flex-1 p-3">
-        <div className="mb-1 flex items-center gap-1.5 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+        <div className="mb-1 flex items-center gap-1.5 text-[11px] uppercase tracking-[0.18em] text-primary/80">
           <PlayCircle className="h-3.5 w-3.5" />
           <span>Bilibili</span>
         </div>
-        <div className="text-sm font-semibold leading-5 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] overflow-hidden">
+        <div className="app-heading text-sm font-semibold leading-5 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] overflow-hidden">
           {title}
         </div>
         <div className="mt-1 text-xs text-muted-foreground">{author}</div>
@@ -200,7 +200,7 @@ export function BilibiliCard({
           {description}
         </p>
       </div>
-      <div className="flex items-start p-3 text-muted-foreground">
+      <div className="flex items-start p-3 text-muted-foreground sm:items-center">
         <ExternalLink className="h-4 w-4" />
       </div>
     </a>

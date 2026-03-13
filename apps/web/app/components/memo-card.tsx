@@ -127,10 +127,10 @@ export function MemoCard({ memo, isDetail = false }: MemoCardProps) {
     <>
       <div 
         onClick={handleCardClick}
-        className={`flex gap-3 p-4 border-b border-border/50 transition-colors ${!isDetail ? 'cursor-pointer hover:bg-muted/30' : ''}`}
+        className={`surface-card interactive-lift mb-3 flex gap-3 rounded-2xl p-3.5 md:p-4 ${!isDetail ? 'cursor-pointer hover:bg-accent/25' : ''}`}
       >
-        <div className="flex-shrink-0 pt-1">
-          <button type="button" onClick={handleAuthorClick} className="rounded-full">
+        <div className="shrink-0 pt-0.5">
+          <button type="button" onClick={handleAuthorClick} className="touch-target rounded-full">
             <Avatar className="w-10 h-10">
               <AvatarImage src={memo.author.avatarUrl} />
               <AvatarFallback>{memo.author.username.slice(0, 2).toUpperCase()}</AvatarFallback>
@@ -140,18 +140,18 @@ export function MemoCard({ memo, isDetail = false }: MemoCardProps) {
         
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between">
-            <div className="flex items-center gap-1.5 flex-wrap text-sm leading-5 mb-1">
+            <div className="mb-1 flex flex-wrap items-center gap-1.5 text-sm leading-5">
               <button
                 type="button"
                 onClick={handleAuthorClick}
-                className="font-bold text-foreground hover:underline underline-offset-2"
+                className="font-bold text-foreground hover:text-primary"
               >
                 {memo.author.displayName || memo.author.username}
               </button>
               <button
                 type="button"
                 onClick={handleAuthorClick}
-                className="text-muted-foreground hover:underline underline-offset-2"
+                className="text-muted-foreground hover:text-foreground"
               >
                 @{memo.author.username}
               </button>
@@ -173,14 +173,14 @@ export function MemoCard({ memo, isDetail = false }: MemoCardProps) {
                 </Tooltip>
               </TooltipProvider>
 
-              {memo.isPinned && <Pin className="w-3.5 h-3.5 text-primary ml-1" />}
+              {memo.isPinned && <Pin className="ml-1 h-3.5 w-3.5 text-primary" />}
             </div>
             
             {isOwner && (
               <div onClick={(e) => e.stopPropagation()}>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 -mt-1 -mr-2 text-muted-foreground hover:text-foreground rounded-full">
+                    <Button variant="ghost" size="icon" className="touch-target -mr-1 -mt-1 h-9 w-9 rounded-full text-muted-foreground hover:bg-accent/65 hover:text-foreground">
                       <MoreHorizontal className="w-4 h-4" />
                     </Button>
                   </DropdownMenuTrigger>
@@ -211,7 +211,7 @@ export function MemoCard({ memo, isDetail = false }: MemoCardProps) {
             )}
           </div>
 
-          <div className={`prose dark:prose-invert max-w-none break-words ${isDetail ? 'prose-base' : 'prose-sm'}`}>
+          <div className={`prose dark:prose-invert max-w-none wrap-break-word prose-p:leading-6 prose-a:text-primary ${isDetail ? 'prose-base' : 'prose-sm'}`}>
             <ReactMarkdown
               components={markdownComponents as any}
               rehypePlugins={markdownRehypePlugins as any}
@@ -222,34 +222,34 @@ export function MemoCard({ memo, isDetail = false }: MemoCardProps) {
           </div>
           
           {imageResources.length > 0 && (
-            <div className="mt-3 grid grid-cols-2 gap-2 pr-4">
+            <div className="mt-3 grid grid-cols-2 gap-2 pr-0 sm:pr-2 md:pr-4">
               {imageResources.map((resource, index) => (
                 <button
                   key={resource.id}
                   type="button"
-                  className="rounded-xl border bg-muted/20 overflow-hidden max-h-80 flex items-center justify-center cursor-pointer hover:opacity-90 transition-opacity"
+                  className="interactive-lift overflow-hidden rounded-xl border border-border/70 bg-muted/20"
                   onClick={(e) => openLightbox(e, index)}
                 >
                   <img
                     src={resource.externalLink}
                     alt={resource.filename}
-                    className="w-full h-auto object-contain max-h-80"
+                    className="h-auto max-h-80 w-full object-contain"
                   />
                 </button>
               ))}
             </div>
           )}
 
-          <div className="flex items-center gap-6 mt-3 text-muted-foreground">
+          <div className="mt-3 flex items-center gap-5 text-muted-foreground">
             <button 
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 setIsReplying(true);
               }}
-              className="flex items-center gap-1.5 text-sm hover:text-primary transition-colors group"
+              className="group flex min-h-10 items-center gap-1.5 rounded-full pr-2 text-sm transition-colors hover:text-primary"
             >
-              <div className="p-1.5 rounded-full group-hover:bg-primary/10 transition-colors">
+              <div className="rounded-full p-1.5 transition-colors group-hover:bg-primary/10">
                 <MessageCircle className="w-4 h-4" />
               </div>
               {replyCount > 0 && <span>{replyCount}</span>}

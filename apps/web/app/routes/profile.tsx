@@ -55,12 +55,12 @@ export default function ProfileRoute() {
   };
 
   return (
-    <div className="space-y-6 pb-20">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">{t("profile.title")}</h1>
+    <div className="stagger-fade space-y-6 pb-20">
+      <div className="mb-4 md:mb-6">
+        <h1 className="app-heading text-2xl font-semibold">{t("profile.title")}</h1>
       </div>
 
-      <Card>
+      <Card className="surface-card rounded-2xl border-border/70 shadow-sm">
         <CardHeader>
           <CardTitle>{t("profile.editTitle")}</CardTitle>
           <CardDescription>{t("profile.editDescription")}</CardDescription>

@@ -23,12 +23,12 @@ export default function SettingsRoute() {
   const { theme, setTheme } = useTheme();
 
   return (
-    <div className="space-y-6 pb-20">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">{t("sidebar.settings")}</h1>
+    <div className="stagger-fade space-y-6 pb-20">
+      <div className="mb-4 md:mb-6">
+        <h1 className="app-heading text-2xl font-semibold">{t("sidebar.settings")}</h1>
       </div>
 
-      <Card>
+      <Card className="surface-card rounded-2xl border-border/70 shadow-sm">
         <CardHeader>
           <CardTitle>{t("settings.preferences")}</CardTitle>
           <CardDescription>{t("settings.preferencesDesc")}</CardDescription>
@@ -40,7 +40,7 @@ export default function SettingsRoute() {
               value={i18n.language.startsWith("zh") ? "zh" : "en"} 
               onValueChange={(val) => i18n.changeLanguage(val)}
             >
-              <SelectTrigger className="w-full sm:w-[300px]">
+              <SelectTrigger className="h-11 w-full sm:w-[300px]">
                 <SelectValue placeholder={t("settings.selectLanguage")} />
               </SelectTrigger>
               <SelectContent>
@@ -56,7 +56,7 @@ export default function SettingsRoute() {
               value={theme} 
               onValueChange={setTheme}
             >
-              <SelectTrigger className="w-full sm:w-[300px]">
+              <SelectTrigger className="h-11 w-full sm:w-[300px]">
                 <SelectValue placeholder={t("settings.selectTheme")} />
               </SelectTrigger>
               <SelectContent>

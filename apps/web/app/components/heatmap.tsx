@@ -20,8 +20,8 @@ export function Heatmap({ username }: { username?: string }) {
 
   if (isLoading) {
     return (
-      <div className="p-4 flex items-center justify-center">
-        <Skeleton className="w-full h-[100px]" />
+      <div className="flex items-center justify-center p-4">
+        <Skeleton className="h-25 w-full rounded-lg" />
       </div>
     );
   }
@@ -37,8 +37,8 @@ export function Heatmap({ username }: { username?: string }) {
   }
 
   return (
-    <div className="w-full overflow-hidden px-4 pb-2">
-      <div className="text-xs text-muted-foreground mb-2 font-medium">
+    <div className="surface-card w-full overflow-hidden rounded-xl px-3.5 pb-2 pt-3">
+      <div className="mb-2 text-xs font-medium text-muted-foreground">
         {t("heatmap.totalCount", { count: stats?.reduce((acc, curr) => acc + curr.count, 0) || 0 })}
       </div>
       <TooltipProvider delayDuration={0}>
@@ -50,8 +50,8 @@ export function Heatmap({ username }: { username?: string }) {
           fontSize={12}
           showTotalCount={false}
           theme={{
-            light: ["#ebedf0", "#9be9a8", "#40c463", "#30a14e", "#216e39"],
-            dark: ["#161b22", "#0e4429", "#006d32", "#26a641", "#39d353"],
+            light: ["oklch(0.95 0.01 95)", "oklch(0.9 0.045 132)", "oklch(0.81 0.09 132)", "oklch(0.71 0.12 136)", "oklch(0.6 0.13 139)"],
+            dark: ["oklch(0.27 0.01 106)", "oklch(0.37 0.05 136)", "oklch(0.47 0.09 136)", "oklch(0.56 0.11 132)", "oklch(0.65 0.12 128)"],
           }}
           labels={{
             legend: {
@@ -87,7 +87,7 @@ export function Heatmap({ username }: { username?: string }) {
               <TooltipTrigger asChild>
                 {React.cloneElement(block, {
                   onClick: () => navigate(`/?date=${activity.date}`),
-                  className: "cursor-pointer hover:stroke-foreground/50 transition-colors",
+                  className: "cursor-pointer transition-transform [transition-timing-function:var(--ease-out-quart)] hover:scale-110 hover:stroke-foreground/45",
                 })}
               </TooltipTrigger>
               <TooltipContent sideOffset={4}>

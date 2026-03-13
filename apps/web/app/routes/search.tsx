@@ -23,14 +23,14 @@ export default function SearchRoute() {
   const { data: memos, isFetching, status } = useSearchMemos(debouncedSearchTerm);
 
   return (
-    <div className="space-y-6 pb-20">
-      <div className="relative">
+    <div className="stagger-fade space-y-5 pb-20 md:space-y-6">
+      <div className="surface-card relative overflow-hidden rounded-2xl p-2">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder={t("search.placeholder")}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-9 bg-background"
+          className="h-11 border-transparent bg-background/80 pl-9 shadow-none"
         />
       </div>
 

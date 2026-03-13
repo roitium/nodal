@@ -6,8 +6,8 @@
 
 @theme {
   --font-sans:
-    "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
-    "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
 
 html,
@@ -59,6 +59,7 @@ body {
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
   --font-sans: Outfit, sans-serif;
+  --font-display: Outfit, sans-serif;
   --font-mono: Geist Mono, ui-monospace, monospace;
   --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
   --radius: 1rem;
@@ -121,7 +122,8 @@ body {
   --sidebar-border: oklch(0.9401 0 0);
   --sidebar-ring: oklch(0.7731 0 0);
   --destructive-foreground: oklch(1 0 0);
-  --font-sans: Outfit, sans-serif;
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: Outfit, sans-serif;
   --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
   --font-mono: Geist Mono, ui-monospace, monospace;
   --shadow-color: oklch(0 0 0);
@@ -145,6 +147,10 @@ body {
     0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 8px 10px -1px hsl(0 0% 0% / 0.1);
   --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
   --tracking-normal: 0em;
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --surface-glow: oklch(0.76 0.09 67 / 0.2);
 }
 
 .dark {
@@ -181,7 +187,8 @@ body {
   --sidebar-ring: oklch(0.7731 0 0);
   --destructive-foreground: oklch(1 0 0);
   --radius: 1rem;
-  --font-sans: Outfit, sans-serif;
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: Outfit, sans-serif;
   --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
   --font-mono: Geist Mono, ui-monospace, monospace;
   --shadow-color: oklch(0 0 0);
@@ -204,6 +211,7 @@ body {
   --shadow-xl:
     0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 8px 10px -1px hsl(0 0% 0% / 0.1);
   --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
+  --surface-glow: oklch(0.63 0.08 61 / 0.16);
 }
 
 @layer base {
@@ -213,6 +221,136 @@ body {
   body {
     @apply bg-background text-foreground;
     letter-spacing: var(--tracking-normal);
+    min-height: 100svh;
+    background-image:
+      radial-gradient(
+        circle at 8% -10%,
+        color-mix(in oklab, var(--surface-glow) 68%, transparent),
+        transparent 44%
+      ),
+      radial-gradient(
+        circle at 92% 6%,
+        color-mix(in oklab, var(--primary) 14%, transparent),
+        transparent 32%
+      ),
+      linear-gradient(
+        180deg,
+        color-mix(in oklab, var(--background) 92%, var(--card)) 0%,
+        var(--background) 38%
+      );
+    background-attachment: fixed;
+    text-rendering: optimizeLegibility;
+  }
+}
+
+@keyframes page-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0) scale(0.995);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes pulse-halo {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--primary) 26%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 10px color-mix(in oklab, var(--primary) 0%, transparent);
+  }
+}
+
+@layer components {
+  .surface-card {
+    border: 1px solid color-mix(in oklab, var(--border) 74%, transparent);
+    background: color-mix(in oklab, var(--card) 91%, var(--background));
+    box-shadow: 0 10px 26px -20px
+      color-mix(in oklab, var(--foreground) 35%, transparent);
+  }
+
+  .interactive-lift {
+    transition:
+      transform 220ms var(--ease-out-quart),
+      background-color 220ms var(--ease-out-quart),
+      border-color 220ms var(--ease-out-quart),
+      box-shadow 220ms var(--ease-out-quart);
+  }
+
+  .interactive-lift:hover {
+    transform: translateY(-1px);
+    border-color: color-mix(in oklab, var(--primary) 36%, var(--border));
+    box-shadow: 0 16px 28px -22px
+      color-mix(in oklab, var(--primary) 50%, transparent);
+  }
+
+  .page-reveal {
+    animation: page-rise 360ms var(--ease-out-expo) both;
+  }
+
+  .app-heading {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+}
+
+@layer utilities {
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .stagger-fade > * {
+    opacity: 0;
+    animation: page-rise 420ms var(--ease-out-quint) forwards;
+  }
+
+  .stagger-fade > *:nth-child(1) {
+    animation-delay: 40ms;
+  }
+
+  .stagger-fade > *:nth-child(2) {
+    animation-delay: 90ms;
+  }
+
+  .stagger-fade > *:nth-child(3) {
+    animation-delay: 140ms;
+  }
+
+  .pulse-halo {
+    animation: pulse-halo 2s var(--ease-out-quart) infinite;
+  }
+}
+
+@media (max-width: 768px) {
+  body.app-body {
+    background-image:
+      radial-gradient(
+        circle at 50% -16%,
+        color-mix(in oklab, var(--surface-glow) 62%, transparent),
+        transparent 52%
+      ),
+      linear-gradient(
+        180deg,
+        color-mix(in oklab, var(--background) 95%, var(--card)) 0%,
+        var(--background) 44%
+      );
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-reveal,
+  .stagger-fade > *,
+  .pulse-halo {
+    animation: none !important;
+  }
+
+  .interactive-lift {
+    transition-duration: 0.01ms !important;
   }
 }
 

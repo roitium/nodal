@@ -32,10 +32,10 @@ export default function UserProfileRoute({ params }: Route.ComponentProps) {
   const displayName = profile?.displayName || profile?.username || username;
 
   return (
-    <div className="pb-20">
-      <section className="overflow-hidden rounded-2xl border border-border/70 bg-card mb-6">
+    <div className="stagger-fade pb-20">
+      <section className="surface-card mb-6 overflow-hidden rounded-2xl border-border/70">
         <div
-          className="h-36 md:h-44 bg-gradient-to-r from-slate-200 via-zinc-100 to-slate-300 dark:from-slate-800 dark:via-zinc-900 dark:to-slate-700"
+          className="h-36 bg-linear-to-r from-amber-100 via-orange-50 to-stone-200 md:h-44 dark:from-stone-800 dark:via-zinc-900 dark:to-stone-700"
           style={
             profile?.coverImageUrl
               ? {
@@ -49,7 +49,7 @@ export default function UserProfileRoute({ params }: Route.ComponentProps) {
 
         <div className="px-4 md:px-6 pb-5">
           <div className="-mt-10 mb-3">
-            <Avatar className="h-20 w-20 border-4 border-card shadow-sm">
+            <Avatar className="h-20 w-20 border-4 border-card shadow-sm ring-2 ring-primary/20">
               <AvatarImage src={profile?.avatarUrl} />
               <AvatarFallback>
                 {displayName.slice(0, 2).toUpperCase()}
@@ -67,12 +67,12 @@ export default function UserProfileRoute({ params }: Route.ComponentProps) {
             <div className="text-sm text-destructive">{t("userProfile.notFound")}</div>
           ) : (
             <>
-              <h1 className="text-xl md:text-2xl font-semibold leading-tight">{displayName}</h1>
+              <h1 className="app-heading text-xl font-semibold leading-tight md:text-2xl">{displayName}</h1>
               <p className="mt-1 text-sm text-muted-foreground">
                 @{profile?.username}
               </p>
               {profile?.bio && (
-                <p className="mt-3 text-sm md:text-base text-foreground/90 whitespace-pre-wrap break-words">
+                <p className="mt-3 text-sm text-foreground/90 whitespace-pre-wrap wrap-break-word md:text-base">
                   {profile.bio}
                 </p>
               )}
@@ -110,7 +110,7 @@ export default function UserProfileRoute({ params }: Route.ComponentProps) {
 
             {hasNextPage && (
               <div ref={ref} className="flex justify-center pt-4">
-                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                <div className="h-6 w-6 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
               </div>
             )}
           </>

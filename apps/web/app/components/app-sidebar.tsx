@@ -66,11 +66,11 @@ export function AppSidebar() {
   };
 
   return (
-    <Sidebar>
-      <SidebarHeader className="p-4">
-        <div className="flex items-center gap-2">
-          <img src="/icon.png" alt="Nodal Logo" className="w-8 h-8 rounded-md object-cover" />
-          <span className="font-semibold text-lg tracking-tight">Nodal</span>
+    <Sidebar className="bg-transparent">
+      <SidebarHeader className="p-4 pb-2">
+        <div className="surface-card interactive-lift flex items-center gap-2.5 rounded-xl px-3 py-2.5">
+          <img src="/icon.png" alt="Nodal Logo" className="h-8 w-8 rounded-md object-cover pulse-halo" />
+          <span className="app-heading text-lg font-semibold tracking-tight">Nodal</span>
         </div>
       </SidebarHeader>
       <SidebarContent className="flex flex-col justify-between">
@@ -81,7 +81,7 @@ export function AppSidebar() {
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild isActive={isActive("/")}>
                     <Link to="/" onClick={closeMobileSidebar}>
-                      <Home className="w-4 h-4" />
+                      <Home className="h-4 w-4" />
                       <span>{t("sidebar.timeline")}</span>
                     </Link>
                   </SidebarMenuButton>
@@ -90,7 +90,7 @@ export function AppSidebar() {
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={isActive("/explore")}>
                   <Link to="/explore" onClick={closeMobileSidebar}>
-                    <Compass className="w-4 h-4" />
+                    <Compass className="h-4 w-4" />
                     <span>{t("sidebar.explore")}</span>
                   </Link>
                 </SidebarMenuButton>
@@ -98,7 +98,7 @@ export function AppSidebar() {
               {canShowInstallAction && (
                 <SidebarMenuItem>
                   <SidebarMenuButton onClick={handleInstallClick}>
-                    <Download className="w-4 h-4" />
+                      <Download className="h-4 w-4" />
                     <span>{t("sidebar.installApp")}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -106,7 +106,7 @@ export function AppSidebar() {
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={isActive("/settings")}>
                   <Link to="/settings" onClick={closeMobileSidebar}>
-                    <Settings className="w-4 h-4" />
+                    <Settings className="h-4 w-4" />
                     <span>{t("sidebar.settings")}</span>
                   </Link>
                 </SidebarMenuButton>
@@ -125,8 +125,8 @@ export function AppSidebar() {
         {user ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-3 w-full hover:bg-sidebar-accent p-2 rounded-md transition-colors outline-none">
-                <Avatar className="w-8 h-8">
+              <button className="interactive-lift touch-target flex w-full items-center gap-3 rounded-lg border border-transparent p-2.5 text-left outline-none hover:bg-sidebar-accent">
+                <Avatar className="h-8 w-8 ring-1 ring-border/70">
                   <AvatarImage src={user.avatarUrl} />
                   <AvatarFallback>{user.username.slice(0, 2).toUpperCase()}</AvatarFallback>
                 </Avatar>
@@ -139,13 +139,13 @@ export function AppSidebar() {
             <DropdownMenuContent align="start" className="w-56">
               <DropdownMenuItem asChild>
                 <Link to="/profile" onClick={closeMobileSidebar}>
-                  <UserRound className="w-4 h-4 mr-2" />
+                  <UserRound className="mr-2 h-4 w-4" />
                   {t("sidebar.profile")}
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
-                <LogOut className="w-4 h-4 mr-2" />
+                <LogOut className="mr-2 h-4 w-4" />
                 {t("sidebar.logout")}
               </DropdownMenuItem>
             </DropdownMenuContent>
