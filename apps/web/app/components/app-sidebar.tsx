@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import {
   Sidebar,
   SidebarContent,
@@ -28,9 +28,10 @@ import { toast } from "sonner";
 export function AppSidebar() {
   const { data: user } = useUser();
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useTranslation();
   const { isInstallable, isInstalled, isIOS, promptInstall } = usePWAInstall();
-  const canShowInstallAction = !isInstalled && (isInstallable || isIOS);
+  const canShowInstallAction = !isInstalled;
 
   const handleInstallClick = () => {
     if (isInstallable) {
@@ -39,13 +40,20 @@ export function AppSidebar() {
     }
 
     toast.message(t("pwa.installHintTitle"), {
-      description: t("pwa.installHintDesc"),
+      description: isIOS
+        ? t("pwa.installHintDesc")
+        : t("pwa.installUnavailableDesc"),
     });
   };
 
   const handleLogout = () => {
     localStorage.removeItem("token");
     navigate("/login");
+  };
+
+  const isActive = (href: string) => {
+    if (href === "/") return location.pathname === "/";
+    return location.pathname === href || location.pathname.startsWith(`${href}/`);
   };
 
   return (
@@ -60,16 +68,18 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
+              {user && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={isActive("/")}>
+                    <Link to="/">
+                      <Home className="w-4 h-4" />
+                      <span>{t("sidebar.timeline")}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
               <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <Link to="/">
-                    <Home className="w-4 h-4" />
-                    <span>{t("sidebar.timeline")}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
+                <SidebarMenuButton asChild isActive={isActive("/explore")}>
                   <Link to="/explore">
                     <Compass className="w-4 h-4" />
                     <span>{t("sidebar.explore")}</span>
@@ -85,7 +95,7 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               )}
               <SidebarMenuItem>
-                <SidebarMenuButton asChild>
+                <SidebarMenuButton asChild isActive={isActive("/settings")}>
                   <Link to="/settings">
                     <Settings className="w-4 h-4" />
                     <span>{t("sidebar.settings")}</span>
@@ -96,9 +106,11 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
         
-        <div className="mt-auto pb-4">
-          <Heatmap />
-        </div>
+        {user && (
+          <div className="mt-auto pb-4">
+            <Heatmap />
+          </div>
+        )}
       </SidebarContent>
       <SidebarFooter className="p-4 border-t border-sidebar-border">
         {user ? (

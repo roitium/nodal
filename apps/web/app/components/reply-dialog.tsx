@@ -52,7 +52,6 @@ export function ReplyDialog({ memo, open, onOpenChange }: ReplyDialogProps) {
           submittingLabel={t("createMemo.replying")}
           placeholder={t("createMemo.replyPlaceholder")}
           height={220}
-          autoFocus
           resetSignal={resetSignal}
           draftKey={`reply:${memo.id}`}
           className="border-none rounded-none"

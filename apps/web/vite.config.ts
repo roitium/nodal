@@ -16,6 +16,10 @@ export default defineConfig({
     tsconfigPaths(),
     VitePWA({
       registerType: "prompt",
+      devOptions: {
+        enabled: true,
+      },
+      includeAssets: ["favicon.ico", "apple-touch-icon.png", "icon.png"],
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg}"],
         navigateFallback: "/index.html",
@@ -42,12 +46,17 @@ export default defineConfig({
         ],
       },
       manifest: {
+        id: "/",
         name: "Nodal",
         short_name: "Nodal",
         description: "Capture your thoughts, anywhere, anytime.",
+        lang: "zh-CN",
+        start_url: "/",
+        scope: "/",
         theme_color: "#ffffff",
         background_color: "#ffffff",
         display: "standalone",
+        display_override: ["standalone", "browser"],
         icons: [
           {
             src: "pwa-192x192.png",

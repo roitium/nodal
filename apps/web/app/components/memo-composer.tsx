@@ -9,8 +9,9 @@ import { MemoEditor } from "~/components/memo-editor";
 import { cn } from "~/lib/utils";
 import { useLightboxHistory } from "~/hooks/use-lightbox-history";
 import { useTranslation } from "react-i18next";
-import Cropper, { type Area } from "react-easy-crop";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "~/components/ui/dialog";
+import ReactCrop, { centerCrop, makeAspectCrop, type Crop, type PixelCrop } from "react-image-crop";
+import "react-image-crop/dist/ReactCrop.css";
 
 type UploadStatus = "uploading" | "uploaded" | "failed";
 
@@ -70,49 +71,73 @@ function isBlobUrl(url: string) {
   return url.startsWith("blob:");
 }
 
-async function createImageElement(url: string): Promise<HTMLImageElement> {
-  return await new Promise((resolve, reject) => {
-    const image = new Image();
-    image.addEventListener("load", () => resolve(image));
-    image.addEventListener("error", (error) => reject(error));
-    image.src = url;
-  });
+const ASPECT_OPTIONS: Array<{ key: string; label: string; value?: number }> = [
+  { key: "free", label: "Free" },
+  { key: "square", label: "1:1", value: 1 },
+  { key: "portrait", label: "4:5", value: 4 / 5 },
+  { key: "landscape", label: "4:3", value: 4 / 3 },
+  { key: "wide", label: "16:9", value: 16 / 9 },
+];
+
+function getCenteredCrop(mediaWidth: number, mediaHeight: number, aspect?: number): Crop {
+  if (!aspect) {
+    return {
+      unit: "%",
+      x: 10,
+      y: 10,
+      width: 80,
+      height: 80,
+    };
+  }
+
+  return centerCrop(
+    makeAspectCrop(
+      {
+        unit: "%",
+        width: 80,
+      },
+      aspect,
+      mediaWidth,
+      mediaHeight,
+    ),
+    mediaWidth,
+    mediaHeight,
+  );
 }
 
-async function cropImageFile(
-  imageSrc: string,
-  crop: Area,
+async function cropWithCanvas(
+  image: HTMLImageElement,
+  pixelCrop: PixelCrop,
   sourceFile: File,
 ): Promise<File> {
-  const image = await createImageElement(imageSrc);
+  const scaleX = image.naturalWidth / image.width;
+  const scaleY = image.naturalHeight / image.height;
   const canvas = document.createElement("canvas");
-  canvas.width = crop.width;
-  canvas.height = crop.height;
-  const ctx = canvas.getContext("2d");
+  const width = Math.max(1, Math.floor(pixelCrop.width * scaleX));
+  const height = Math.max(1, Math.floor(pixelCrop.height * scaleY));
+  canvas.width = width;
+  canvas.height = height;
 
-  if (!ctx) {
-    return sourceFile;
-  }
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return sourceFile;
 
   ctx.drawImage(
     image,
-    crop.x,
-    crop.y,
-    crop.width,
-    crop.height,
+    pixelCrop.x * scaleX,
+    pixelCrop.y * scaleY,
+    pixelCrop.width * scaleX,
+    pixelCrop.height * scaleY,
     0,
     0,
-    crop.width,
-    crop.height,
+    width,
+    height,
   );
 
   const blob = await new Promise<Blob | null>((resolve) => {
     canvas.toBlob(resolve, sourceFile.type || "image/jpeg", 0.95);
   });
 
-  if (!blob) {
-    return sourceFile;
-  }
+  if (!blob) return sourceFile;
 
   return new File([blob], sourceFile.name, {
     type: sourceFile.type || "image/jpeg",
@@ -157,13 +182,14 @@ export function MemoComposer({
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [cropDialogOpen, setCropDialogOpen] = useState(false);
   const [cropImageUrl, setCropImageUrl] = useState<string | null>(null);
-  const [cropPosition, setCropPosition] = useState({ x: 0, y: 0 });
-  const [cropZoom, setCropZoom] = useState(1);
-  const [cropAreaPixels, setCropAreaPixels] = useState<Area | null>(null);
+  const [cropAspect, setCropAspect] = useState<number | undefined>(undefined);
+  const [crop, setCrop] = useState<Crop>({ unit: "%", x: 10, y: 10, width: 80, height: 80 });
+  const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
 
   const { uploadFile } = useUpload();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
+  const cropImageRef = useRef<HTMLImageElement | null>(null);
   const attachmentsRef = useRef<ComposerAttachment[]>(attachments);
   const cropSessionRef = useRef<CropSession | null>(null);
   const loadedDraftRef = useRef(false);
@@ -295,9 +321,8 @@ export function MemoComposer({
     cropSessionRef.current = null;
     setCropDialogOpen(false);
     setCropImageUrl(null);
-    setCropAreaPixels(null);
-    setCropZoom(1);
-    setCropPosition({ x: 0, y: 0 });
+    setCompletedCrop(undefined);
+    setCrop({ unit: "%", x: 10, y: 10, width: 80, height: 80 });
   };
 
   const requestCroppedFile = async (file: File): Promise<File> => {
@@ -309,23 +334,23 @@ export function MemoComposer({
       const imageUrl = URL.createObjectURL(file);
       cropSessionRef.current = { file, imageUrl, resolve };
       setCropImageUrl(imageUrl);
-      setCropAreaPixels(null);
-      setCropZoom(1);
-      setCropPosition({ x: 0, y: 0 });
+      setCompletedCrop(undefined);
+      setCrop({ unit: "%", x: 10, y: 10, width: 80, height: 80 });
       setCropDialogOpen(true);
     });
   };
 
   const handleCropApply = async () => {
     const session = cropSessionRef.current;
-    if (!session) return;
+    const image = cropImageRef.current;
+    if (!session || !image) return;
 
-    if (!cropAreaPixels) {
+    if (!completedCrop?.width || !completedCrop.height) {
       finishCropSession(session.file);
       return;
     }
 
-    const croppedFile = await cropImageFile(cropImageUrl ?? session.imageUrl, cropAreaPixels, session.file);
+    const croppedFile = await cropWithCanvas(image, completedCrop, session.file);
     finishCropSession(croppedFile);
   };
 
@@ -339,7 +364,10 @@ export function MemoComposer({
     const files = Array.from(e.target.files ?? []);
     if (files.length === 0) return;
 
-    const filesWithCrop = await Promise.all(files.map((file) => requestCroppedFile(file)));
+    const filesWithCrop: File[] = [];
+    for (const file of files) {
+      filesWithCrop.push(await requestCroppedFile(file));
+    }
 
     const pending = filesWithCrop.map((file) => ({
       file,
@@ -486,7 +514,7 @@ export function MemoComposer({
                 <button
                   type="button"
                   onClick={() => handleRemoveAttachment(attachment.localId)}
-                  className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
+                  className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shadow-sm"
                 >
                   <X className="w-3 h-3" />
                 </button>
@@ -544,34 +572,53 @@ export function MemoComposer({
           </DialogHeader>
 
           <div className="space-y-4">
-            <div className="relative h-[320px] rounded-xl overflow-hidden bg-muted/50">
+            <div className="relative max-h-[60vh] overflow-auto rounded-xl border bg-muted/20 p-3">
               {cropImageUrl && (
-                <Cropper
-                  image={cropImageUrl}
-                  crop={cropPosition}
-                  zoom={cropZoom}
-                  aspect={16 / 9}
-                  onCropChange={setCropPosition}
-                  onZoomChange={setCropZoom}
-                  onCropComplete={(_, croppedArea) => setCropAreaPixels(croppedArea)}
-                />
+                <ReactCrop
+                  crop={crop}
+                  onChange={(nextCrop) => setCrop(nextCrop)}
+                  onComplete={(nextCrop) => setCompletedCrop(nextCrop)}
+                  aspect={cropAspect}
+                  minWidth={40}
+                  minHeight={40}
+                >
+                  <img
+                    src={cropImageUrl}
+                    alt="crop"
+                    ref={cropImageRef}
+                    onLoad={(event) => {
+                      const image = event.currentTarget;
+                      setCrop(getCenteredCrop(image.width, image.height, cropAspect));
+                    }}
+                  />
+                </ReactCrop>
               )}
             </div>
 
             <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <span>{t("createMemo.cropZoom")}</span>
-                <span>{cropZoom.toFixed(1)}x</span>
+              <p className="text-sm text-muted-foreground">{t("createMemo.cropAspect")}</p>
+              <div className="flex flex-wrap gap-2">
+                {ASPECT_OPTIONS.map((option) => {
+                  const selected = cropAspect === option.value || (!option.value && !cropAspect);
+                  return (
+                    <Button
+                      key={option.key}
+                      type="button"
+                      variant={selected ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => {
+                        setCropAspect(option.value);
+                        const image = cropImageRef.current;
+                        if (image) {
+                          setCrop(getCenteredCrop(image.width, image.height, option.value));
+                        }
+                      }}
+                    >
+                      {option.value ? option.label : t("createMemo.cropAspectFree")}
+                    </Button>
+                  );
+                })}
               </div>
-              <input
-                type="range"
-                min={1}
-                max={3}
-                step={0.1}
-                value={cropZoom}
-                onChange={(event) => setCropZoom(Number(event.target.value))}
-                className="w-full"
-              />
             </div>
 
             <p className="text-xs text-muted-foreground">{t("createMemo.cropHint")}</p>

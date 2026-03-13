@@ -21,7 +21,11 @@ export function usePWAInstall() {
     setIsIOS(/iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream);
 
     // Check if already installed
-    if (window.matchMedia("(display-mode: standalone)").matches) {
+    const inStandalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (window.navigator as any).standalone === true;
+
+    if (inStandalone) {
       setIsInstalled(true);
     }
 

@@ -28,7 +28,8 @@
     "updateAvailableDesc": "A new version is ready. Refresh now to update.",
     "updateAction": "Update",
     "installHintTitle": "Install from browser menu",
-    "installHintDesc": "Use your browser menu and choose 'Add to Home Screen' to install."
+    "installHintDesc": "Use your browser menu and choose 'Add to Home Screen' to install.",
+    "installUnavailableDesc": "Install is currently unavailable. Ensure HTTPS, production build, and a browser that supports PWA install."
   },
   "createMemo": {
     "placeholder": "What's on your mind?",
@@ -40,8 +41,10 @@
     "reply": "Reply",
     "replying": "Replying...",
     "cropTitle": "Crop image",
-    "cropHint": "Drag and zoom the image, then upload the cropped result.",
+    "cropHint": "Drag and resize the crop area, then upload the cropped result.",
     "cropZoom": "Zoom",
+    "cropAspect": "Aspect ratio",
+    "cropAspectFree": "Free",
     "cropSkip": "Skip crop",
     "cropApply": "Apply crop"
   },

@@ -9,8 +9,13 @@ export default function Layout() {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (!token && location.pathname !== "/login") {
-      navigate("/login");
+    if (!token && location.pathname === "/") {
+      navigate("/explore", { replace: true });
+      return;
+    }
+
+    if (!token && location.pathname === "/profile") {
+      navigate("/login", { replace: true });
     }
   }, [navigate, location.pathname]);
 
