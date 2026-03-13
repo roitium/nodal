@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { format, formatDistanceToNow, differenceInHours } from "date-fns";
 import { zhCN, enUS } from "date-fns/locale";
 import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import { MoreHorizontal, Pin, Lock, Globe, Trash2, Edit, MessageCircle } from "lucide-react";
 import type { Memo } from "~/lib/api";
 import { useDeleteMemo } from "~/hooks/mutations/use-delete-memo";
@@ -32,6 +31,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "~/comp
 import { MemoComposer } from "~/components/memo-composer";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
 import { useLightboxHistory } from "~/hooks/use-lightbox-history";
+import { markdownComponents, markdownRehypePlugins, markdownRemarkPlugins } from "~/lib/markdown";
 
 interface MemoCardProps {
   memo: Memo;
@@ -212,7 +212,11 @@ export function MemoCard({ memo, isDetail = false }: MemoCardProps) {
           </div>
 
           <div className={`prose dark:prose-invert max-w-none break-words ${isDetail ? 'prose-base' : 'prose-sm'}`}>
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            <ReactMarkdown
+              components={markdownComponents as any}
+              rehypePlugins={markdownRehypePlugins as any}
+              remarkPlugins={markdownRemarkPlugins as any}
+            >
               {memo.content}
             </ReactMarkdown>
           </div>

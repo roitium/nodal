@@ -9,6 +9,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "~/components/ui/sidebar";
 import { useUser } from "~/hooks/queries/use-user";
 import { Home, Compass, Settings, LogOut, Download, UserRound } from "lucide-react";
@@ -29,9 +30,16 @@ export function AppSidebar() {
   const { data: user } = useUser();
   const navigate = useNavigate();
   const location = useLocation();
+  const { isMobile, setOpenMobile } = useSidebar();
   const { t } = useTranslation();
   const { isInstallable, isInstalled, isIOS, promptInstall } = usePWAInstall();
   const canShowInstallAction = !isInstalled;
+
+  const closeMobileSidebar = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
 
   const handleInstallClick = () => {
     if (isInstallable) {
@@ -48,6 +56,7 @@ export function AppSidebar() {
 
   const handleLogout = () => {
     localStorage.removeItem("token");
+    closeMobileSidebar();
     navigate("/login");
   };
 
@@ -71,7 +80,7 @@ export function AppSidebar() {
               {user && (
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild isActive={isActive("/")}>
-                    <Link to="/">
+                    <Link to="/" onClick={closeMobileSidebar}>
                       <Home className="w-4 h-4" />
                       <span>{t("sidebar.timeline")}</span>
                     </Link>
@@ -80,7 +89,7 @@ export function AppSidebar() {
               )}
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={isActive("/explore")}>
-                  <Link to="/explore">
+                  <Link to="/explore" onClick={closeMobileSidebar}>
                     <Compass className="w-4 h-4" />
                     <span>{t("sidebar.explore")}</span>
                   </Link>
@@ -96,7 +105,7 @@ export function AppSidebar() {
               )}
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={isActive("/settings")}>
-                  <Link to="/settings">
+                  <Link to="/settings" onClick={closeMobileSidebar}>
                     <Settings className="w-4 h-4" />
                     <span>{t("sidebar.settings")}</span>
                   </Link>
@@ -129,7 +138,7 @@ export function AppSidebar() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-56">
               <DropdownMenuItem asChild>
-                <Link to="/profile">
+                <Link to="/profile" onClick={closeMobileSidebar}>
                   <UserRound className="w-4 h-4 mr-2" />
                   {t("sidebar.profile")}
                 </Link>
@@ -143,7 +152,7 @@ export function AppSidebar() {
           </DropdownMenu>
         ) : (
           <SidebarMenuButton asChild>
-            <Link to="/login">{t("sidebar.login")}</Link>
+            <Link to="/login" onClick={closeMobileSidebar}>{t("sidebar.login")}</Link>
           </SidebarMenuButton>
         )}
       </SidebarFooter>

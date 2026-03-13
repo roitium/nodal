@@ -1,18 +1,30 @@
 import { reactRouter } from "@react-router/dev/vite";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "vite";
+import babel from "vite-plugin-babel";
 import tsconfigPaths from "vite-tsconfig-paths";
 import devtoolsJson from "vite-plugin-devtools-json";
 import { VitePWA } from "vite-plugin-pwa";
-
-const AVATAR_PATH_PATTERN =
-  /(avatar|avatars|profile|profiles|user-avatar|headshot)/i;
 
 export default defineConfig({
   plugins: [
     devtoolsJson(),
     tailwindcss(),
     reactRouter(),
+    babel({
+      filter: /\.[jt]sx?$/,
+      babelConfig: {
+        presets: ["@babel/preset-typescript"],
+        plugins: [
+          [
+            "babel-plugin-react-compiler",
+            {
+              logLevel: "verbose",
+            },
+          ],
+        ],
+      },
+    }),
     tsconfigPaths(),
     VitePWA({
       registerType: "prompt",
@@ -21,8 +33,8 @@ export default defineConfig({
       },
       includeAssets: ["favicon.ico", "apple-touch-icon.png", "icon.png"],
       workbox: {
-        globPatterns: ["**/*.{js,css,html,ico,png,svg}"],
-        navigateFallback: "/index.html",
+        globPatterns: ["**/*.{js,css,ico,png,svg,webmanifest}"],
+        navigateFallback: "/",
         navigateFallbackDenylist: [/^\/api\//],
         cleanupOutdatedCaches: true,
         runtimeCaching: [
@@ -30,7 +42,9 @@ export default defineConfig({
             // Cache avatar-like image requests between page reloads.
             urlPattern: ({ request, url }) =>
               request.destination === "image" &&
-              AVATAR_PATH_PATTERN.test(url.pathname),
+              /(avatar|avatars|profile|profiles|user-avatar|headshot)/i.test(
+                url.pathname,
+              ),
             handler: "CacheFirst",
             options: {
               cacheName: "nodal-image-cache-v1",

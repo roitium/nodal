@@ -1,7 +1,8 @@
-import MDEditor from "@uiw/react-md-editor";
+import MDEditor, { commands, type ICommand, type TextAreaTextApi, type TextState } from "@uiw/react-md-editor";
+import { Wrench } from "lucide-react";
 import { useTheme } from "next-themes";
-import rehypeSanitize from "rehype-sanitize";
-import type { KeyboardEvent } from "react";
+import { useMemo, type KeyboardEvent } from "react";
+import { markdownComponents, markdownRehypePlugins, markdownRemarkPlugins } from "~/lib/markdown";
 
 interface MemoEditorProps {
   value: string;
@@ -32,6 +33,39 @@ export function MemoEditor({
 }: MemoEditorProps) {
   const { theme } = useTheme();
 
+  const shareBilibiliCommand = useMemo<ICommand>(
+    () => ({
+      name: "share-bilibili-video",
+      keyCommand: "share-bilibili-video",
+      buttonProps: { "aria-label": "分享 B 站视频" },
+      icon: <span className="text-xs">分享 B 站视频</span>,
+      execute: (state: TextState, api: TextAreaTextApi) => {
+        const snippet = "[[bilibili:]]";
+        api.replaceSelection(snippet);
+        const cursor = state.selection.start + "[[bilibili:".length;
+        api.setSelectionRange({ start: cursor, end: cursor });
+      },
+    }),
+    [],
+  );
+
+  const toolsCommand = useMemo<ICommand>(
+    () =>
+      commands.group([shareBilibiliCommand], {
+        name: "tools",
+        groupName: "tools",
+        buttonProps: { "aria-label": "工具" },
+        liProps: { className: "memo-editor-tools-command" },
+        icon: <Wrench className="h-3.5 w-3.5" />,
+      }),
+    [shareBilibiliCommand],
+  );
+
+  const extraCommands = useMemo<ICommand[]>(
+    () => [commands.codeEdit, commands.codeLive, commands.codePreview, commands.divider, toolsCommand, commands.divider, commands.fullscreen],
+    [toolsCommand],
+  );
+
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     const userOnKeyDown = textareaProps?.onKeyDown as
       | ((event: KeyboardEvent<HTMLTextAreaElement>) => void)
@@ -56,9 +90,12 @@ export function MemoEditor({
         preview={preview}
         height={height}
         hideToolbar={hideToolbar}
+        extraCommands={extraCommands as any}
         className="border-none rounded-none shadow-none! bg-transparent"
         previewOptions={{
-          rehypePlugins: [[rehypeSanitize]],
+          components: markdownComponents as any,
+          rehypePlugins: markdownRehypePlugins as any,
+          remarkPlugins: markdownRemarkPlugins as any,
         }}
         textareaProps={{
           ...textareaProps,

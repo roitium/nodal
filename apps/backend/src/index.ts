@@ -3,6 +3,7 @@ import openapi from '@elysiajs/openapi'
 import { Elysia } from 'elysia'
 import { authController } from './controllers/auth.controller'
 import { memosController } from './controllers/memos.controller'
+import { proxyController } from './controllers/proxy.controller'
 import { resourcesController } from './controllers/resources.controller'
 
 export const app = new Elysia({ prefix: '/api/v1' })
@@ -11,4 +12,5 @@ export const app = new Elysia({ prefix: '/api/v1' })
 	.use(memosController)
 	.use(authController)
 	.use(resourcesController)
+	.use(proxyController)
 	.listen(3000)
