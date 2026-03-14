@@ -1,0 +1,7 @@
+DATABASE_URL=postgresql://user:password@host:6543/database
+JWT_SECRET=replace-with-a-long-random-secret
+ROOT_DOMAIN=nodal.roitium.com
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=replace-with-your-service-role-key
+STORAGE_BUCKET=resources
+STORAGE_PROVIDER=supabase

@@ -1,15 +1,12 @@
 import type { MiddlewareHandler } from "hono";
 import { sign, verify } from "hono/jwt";
 import type { CloudflareBindings, SessionPayload } from "@/types/env";
-import { getEnv } from "@/utils/env";
+import { requireEnv } from "@/utils/env";
 
 export const authMiddleware: MiddlewareHandler<{
   Bindings: CloudflareBindings;
 }> = async (c, next) => {
-  const secret = getEnv(c.env, "JWT_SECRET");
-  if (!secret) {
-    throw new Error("JWT_SECRET is not set");
-  }
+  const secret = requireEnv(c.env, "JWT_SECRET");
 
   const jwt = {
     sign: (payload: Record<string, unknown>) => sign(payload, secret),

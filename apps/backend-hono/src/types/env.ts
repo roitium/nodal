@@ -1,11 +1,23 @@
+export type StorageProvider = "supabase" | (string & {});
+
 export type CloudflareBindings = {
   DATABASE_URL: string;
   JWT_SECRET: string;
-  ROOT_DOMAIN: string;
+  ROOT_DOMAIN?: string;
   SUPABASE_URL: string;
   SUPABASE_SERVICE_ROLE_KEY: string;
   STORAGE_BUCKET: string;
-  STORAGE_PROVIDER?: string;
+  STORAGE_PROVIDER?: StorageProvider;
+};
+
+export type ResolvedCloudflareEnv = {
+  DATABASE_URL: string;
+  JWT_SECRET: string;
+  ROOT_DOMAIN?: string;
+  SUPABASE_URL: string;
+  SUPABASE_SERVICE_ROLE_KEY: string;
+  STORAGE_BUCKET: string;
+  STORAGE_PROVIDER: StorageProvider;
 };
 
 export type SessionUser = {

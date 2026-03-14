@@ -4,14 +4,11 @@ main = "src/index.ts"
 compatibility_date = "2026-03-14"
 compatibility_flags = ["nodejs_compat"]
 
-# Keep workers.dev enabled for now.
-# When you bind a production custom domain, switch this to false.
-# workers_dev = false
+# Production traffic goes through the custom domain below.
+workers_dev = false
+routes = [{ pattern = "nodal.roitium.com", custom_domain = true }]
 
-# Production custom domain example:
-# routes = [
-#   { pattern = "nodal.roitium.com", custom_domain = true },
-# ]
+# Keep secrets in .dev.vars locally and in Wrangler secrets remotely.
 
 # [vars]
 # MY_VAR = "my-variable"
