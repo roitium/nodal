@@ -50,7 +50,7 @@ export default function UserProfileRoute({ params }: Route.ComponentProps) {
         <div className="px-4 md:px-6 pb-5">
           <div className="-mt-10 mb-3">
             <Avatar className="h-20 w-20 border-4 border-card shadow-sm ring-2 ring-primary/20">
-              <AvatarImage src={profile?.avatarUrl} />
+              <AvatarImage src={profile?.avatarUrl ?? undefined} />
               <AvatarFallback>
                 {displayName.slice(0, 2).toUpperCase()}
               </AvatarFallback>
@@ -64,10 +64,14 @@ export default function UserProfileRoute({ params }: Route.ComponentProps) {
               <Skeleton className="h-4 w-full max-w-lg" />
             </div>
           ) : profileStatus === "error" ? (
-            <div className="text-sm text-destructive">{t("userProfile.notFound")}</div>
+            <div className="text-sm text-destructive">
+              {t("userProfile.notFound")}
+            </div>
           ) : (
             <>
-              <h1 className="app-heading text-xl font-semibold leading-tight md:text-2xl">{displayName}</h1>
+              <h1 className="app-heading text-xl font-semibold leading-tight md:text-2xl">
+                {displayName}
+              </h1>
               <p className="mt-1 text-sm text-muted-foreground">
                 @{profile?.username}
               </p>
@@ -97,7 +101,9 @@ export default function UserProfileRoute({ params }: Route.ComponentProps) {
             </div>
           ))
         ) : status === "error" ? (
-          <div className="text-center text-destructive p-4">{t("userProfile.loadError")}</div>
+          <div className="text-center text-destructive p-4">
+            {t("userProfile.loadError")}
+          </div>
         ) : (
           <>
             {data.pages.map((page, i) => (

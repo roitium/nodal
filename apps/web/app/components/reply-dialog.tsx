@@ -6,9 +6,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "~/components/ui/dialog";
+import type { InferResponseType } from "hono/client";
 import { useTranslation } from "react-i18next";
-import type { Memo } from "~/lib/api";
+import { client } from "~/lib/rpc";
 import { MemoComposer } from "~/components/memo-composer";
+
+type Memo = InferResponseType<
+  (typeof client.api.v1.memos)[":id"]["$get"],
+  200
+>["data"];
 
 interface ReplyDialogProps {
   memo: Memo;
@@ -19,11 +25,17 @@ interface ReplyDialogProps {
 export function ReplyDialog({ memo, open, onOpenChange }: ReplyDialogProps) {
   const [content, setContent] = useState("");
   const [resetSignal, setResetSignal] = useState(0);
-  
+
   const createMutation = useCreateMemo();
   const { t } = useTranslation();
 
-  const handleSubmit = async ({ content, resourceIds }: { content: string; resourceIds: string[] }) => {
+  const handleSubmit = async ({
+    content,
+    resourceIds,
+  }: {
+    content: string;
+    resourceIds: string[];
+  }) => {
     await createMutation.mutateAsync({
       content,
       visibility: memo.visibility,
@@ -40,7 +52,9 @@ export function ReplyDialog({ memo, open, onOpenChange }: ReplyDialogProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px] min-h-[420px] p-0 overflow-hidden gap-0">
         <DialogHeader className="p-4 pb-0">
-          <DialogTitle>{t("memoCard.replyTo")} @{memo.author.username}</DialogTitle>
+          <DialogTitle>
+            {t("memoCard.replyTo")} @{memo.author.username}
+          </DialogTitle>
         </DialogHeader>
 
         <MemoComposer

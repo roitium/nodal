@@ -5,7 +5,7 @@ import {
   normalizeBilibiliBvid,
   type BilibiliCardData,
 } from "~/lib/bilibili";
-import { API_BASE_URL } from "~/lib/api";
+import { API_BASE_URL, client } from "~/lib/rpc";
 import { cn } from "~/lib/utils";
 
 type CardState =
@@ -45,8 +45,6 @@ async function loadBilibiliCard(bvid: string) {
     return pending;
   }
 
-  const proxyApiUrl = `${API_BASE_URL}/proxy/bilibili/view?bvid=${encodeURIComponent(bvid)}`;
-
   const parseResponse = (payload: any): BilibiliCardData => {
     const data = payload?.data;
     if (!data) {
@@ -60,7 +58,7 @@ async function loadBilibiliCard(bvid: string) {
       description: data.description ?? "",
       coverUrl:
         typeof data.coverUrl === "string" && data.coverUrl.length > 0
-          ? `${API_BASE_URL}/proxy/image?url=${encodeURIComponent(data.coverUrl.replace(/^http:/, "https:") )}`
+          ? `${API_BASE_URL}/proxy/image?url=${encodeURIComponent(data.coverUrl.replace(/^http:/, "https:"))}`
           : "",
       videoUrl: data.videoUrl ?? getBilibiliVideoUrl(bvid),
       degraded: data.degraded ?? false,
@@ -68,17 +66,12 @@ async function loadBilibiliCard(bvid: string) {
   };
 
   const fetchBilibili = async () => {
-    const response = await fetch(proxyApiUrl);
-    if (!response.ok) {
-      return buildFallbackCardData(bvid);
-    }
+    const response = await client.api.v1.proxy.bilibili.view.$get({
+      query: { bvid },
+    });
+    const payload = await response.json();
 
-    const payload = (await response.json()) as {
-      data?: BilibiliCardData;
-      error?: string | null;
-    };
-
-    if (!payload || payload.error) {
+    if (!response.ok || !payload || payload.error || !payload.data) {
       return buildFallbackCardData(bvid);
     }
 
@@ -143,7 +136,10 @@ export function BilibiliCard({
       })
       .catch(() => {
         if (!cancelled) {
-          setState({ status: "ready", data: buildFallbackCardData(normalizedBvid) });
+          setState({
+            status: "ready",
+            data: buildFallbackCardData(normalizedBvid),
+          });
         }
       });
 
@@ -177,12 +173,16 @@ export function BilibiliCard({
       rel="noreferrer"
       className={cn(
         "surface-card interactive-lift not-prose my-4 flex flex-col overflow-hidden rounded-2xl text-card-foreground sm:flex-row",
-        className
+        className,
       )}
     >
       <div className="flex h-40 w-full shrink-0 items-center justify-center overflow-hidden bg-muted sm:min-h-28 sm:w-36 sm:self-stretch">
         {coverUrl ? (
-          <img src={coverUrl} alt={title} className="block h-full w-full object-cover" />
+          <img
+            src={coverUrl}
+            alt={title}
+            className="block h-full w-full object-cover"
+          />
         ) : (
           <div className="text-xs text-muted-foreground">Bilibili</div>
         )}

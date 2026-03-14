@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from "react-router";
 import { useQuery } from "@tanstack/react-query";
-import { memosAPI } from "~/lib/api";
+import { client } from "~/lib/rpc";
 import { MemoCard } from "~/components/memo-card";
 import { Skeleton } from "~/components/ui/skeleton";
 import { ArrowLeft } from "lucide-react";
@@ -14,9 +14,7 @@ import { useTranslation } from "react-i18next";
 import type { Route } from "./+types/memo.$id";
 
 export function meta({}: Route.MetaArgs) {
-  return [
-    { title: "Memo - Nodal" },
-  ];
+  return [{ title: "Memo - Nodal" }];
 }
 
 export default function MemoDetailRoute() {
@@ -26,10 +24,20 @@ export default function MemoDetailRoute() {
   const { t } = useTranslation();
 
   // Fetch the main memo
-  const { data: memoResponse, isLoading: isLoadingMemo, isError } = useQuery({
+  const {
+    data: memoResponse,
+    isLoading: isLoadingMemo,
+    isError,
+  } = useQuery({
     queryKey: ["memos", "detail", id],
     queryFn: async () => {
-      const { data } = await memosAPI.getMemo(id as string);
+      const response = await client.api.v1.memos[":id"].$get({
+        param: { id: id as string },
+      });
+      const data = await response.json();
+      if (!response.ok || data.error) {
+        throw new Error(data.error ?? "Failed to fetch memo");
+      }
       return data.data;
     },
     enabled: !!id,
@@ -92,23 +100,25 @@ export default function MemoDetailRoute() {
   return (
     <div className="stagger-fade pb-20">
       <div className="mb-4 flex items-center gap-4 px-2">
-        <Button 
-          variant="ghost" 
-          size="icon" 
+        <Button
+          variant="ghost"
+          size="icon"
           onClick={() => navigate(-1)}
           className="touch-target rounded-full hover:bg-muted"
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h1 className="app-heading text-xl font-semibold">{t("memoDetail.title")}</h1>
+        <h1 className="app-heading text-xl font-semibold">
+          {t("memoDetail.title")}
+        </h1>
       </div>
 
       <div className="surface-card mb-6 overflow-hidden rounded-2xl">
         <MemoCard memo={memo} isDetail={true} />
-        
+
         <div className="border-t border-border/50 bg-muted/20 p-4">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className="h-11 w-full justify-start rounded-full bg-background text-muted-foreground"
             onClick={() => setIsReplying(true)}
           >
@@ -143,13 +153,13 @@ export default function MemoDetailRoute() {
                 ))}
               </div>
             ))}
-            
+
             {hasNextPage && (
               <div ref={ref} className="flex justify-center pt-4">
                 <div className="h-6 w-6 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
               </div>
             )}
-            
+
             {!hasNextPage && (repliesData?.pages[0]?.data?.length ?? 0) > 0 && (
               <div className="text-center text-muted-foreground py-8 text-sm">
                 {t("memoDetail.noMoreReplies")}
@@ -159,11 +169,7 @@ export default function MemoDetailRoute() {
         )}
       </div>
 
-      <ReplyDialog 
-        memo={memo} 
-        open={isReplying} 
-        onOpenChange={setIsReplying} 
-      />
+      <ReplyDialog memo={memo} open={isReplying} onOpenChange={setIsReplying} />
     </div>
   );
 }

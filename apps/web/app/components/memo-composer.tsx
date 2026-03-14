@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { InferResponseType } from "hono/client";
 import { Button } from "~/components/ui/button";
 import { useUpload } from "~/hooks/mutations/use-upload";
-import type { Resource } from "~/lib/api";
+import { client } from "~/lib/rpc";
 import { Image as ImageIcon, Loader2, Send, X } from "lucide-react";
 import Lightbox from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
@@ -9,9 +10,31 @@ import { MemoEditor } from "~/components/memo-editor";
 import { cn } from "~/lib/utils";
 import { useLightboxHistory } from "~/hooks/use-lightbox-history";
 import { useTranslation } from "react-i18next";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "~/components/ui/dialog";
-import ReactCrop, { centerCrop, makeAspectCrop, type Crop, type PixelCrop } from "react-image-crop";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "~/components/ui/dialog";
+import ReactCrop, {
+  centerCrop,
+  makeAspectCrop,
+  type Crop,
+  type PixelCrop,
+} from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
+
+type MemoResource = NonNullable<
+  InferResponseType<
+    (typeof client.api.v1.memos)[":id"]["$get"],
+    200
+  >["data"]["resources"]
+>[number];
+type UploadedResource = InferResponseType<
+  (typeof client.api.v1.resources)["record-upload"]["$post"],
+  200
+>["data"];
+type Resource = MemoResource | UploadedResource;
 
 type UploadStatus = "uploading" | "uploaded" | "failed";
 
@@ -27,7 +50,10 @@ interface ComposerAttachment {
 interface MemoComposerProps {
   value: string;
   onValueChange: (value: string) => void;
-  onSubmit: (payload: { content: string; resourceIds: string[] }) => Promise<void> | void;
+  onSubmit: (payload: {
+    content: string;
+    resourceIds: string[];
+  }) => Promise<void> | void;
   isSubmitting: boolean;
   submitLabel: string;
   submittingLabel: string;
@@ -54,7 +80,7 @@ function resourceToAttachment(resource: Resource): ComposerAttachment {
     localId: `resource-${resource.id}`,
     filename: resource.filename,
     type: resource.type,
-    previewUrl: resource.externalLink,
+    previewUrl: resource.externalLink ?? "",
     status: "uploaded",
     resource,
   };
@@ -79,7 +105,11 @@ const ASPECT_OPTIONS: Array<{ key: string; label: string; value?: number }> = [
   { key: "wide", label: "16:9", value: 16 / 9 },
 ];
 
-function getCenteredCrop(mediaWidth: number, mediaHeight: number, aspect?: number): Crop {
+function getCenteredCrop(
+  mediaWidth: number,
+  mediaHeight: number,
+  aspect?: number,
+): Crop {
   if (!aspect) {
     return {
       unit: "%",
@@ -176,14 +206,20 @@ export function MemoComposer({
   uploadButtonClassName,
 }: MemoComposerProps) {
   const [attachments, setAttachments] = useState<ComposerAttachment[]>(
-    initialResources?.map(resourceToAttachment) ?? []
+    initialResources?.map(resourceToAttachment) ?? [],
   );
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [cropDialogOpen, setCropDialogOpen] = useState(false);
   const [cropImageUrl, setCropImageUrl] = useState<string | null>(null);
   const [cropAspect, setCropAspect] = useState<number | undefined>(undefined);
-  const [crop, setCrop] = useState<Crop>({ unit: "%", x: 10, y: 10, width: 80, height: 80 });
+  const [crop, setCrop] = useState<Crop>({
+    unit: "%",
+    x: 10,
+    y: 10,
+    width: 80,
+    height: 80,
+  });
   const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
 
   const { uploadFile } = useUpload();
@@ -194,7 +230,10 @@ export function MemoComposer({
   const cropSessionRef = useRef<CropSession | null>(null);
   const loadedDraftRef = useRef(false);
   const pointerDownInsideRef = useRef(false);
-  const { closeWithHistory } = useLightboxHistory(lightboxOpen, setLightboxOpen);
+  const { closeWithHistory } = useLightboxHistory(
+    lightboxOpen,
+    setLightboxOpen,
+  );
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -229,7 +268,9 @@ export function MemoComposer({
   useEffect(() => {
     const handlePointerDown = (event: PointerEvent) => {
       const target = event.target as Node | null;
-      pointerDownInsideRef.current = !!(target && rootRef.current?.contains(target));
+      pointerDownInsideRef.current = !!(
+        target && rootRef.current?.contains(target)
+      );
     };
 
     document.addEventListener("pointerdown", handlePointerDown, true);
@@ -283,7 +324,7 @@ export function MemoComposer({
         JSON.stringify({
           content: value,
           updatedAt: Date.now(),
-        })
+        }),
       );
     }, 200);
 
@@ -291,12 +332,17 @@ export function MemoComposer({
   }, [draftKey, value]);
 
   const previewableImages = useMemo(
-    () => attachments.filter((a) => a.type.startsWith("image/") && a.status !== "failed"),
-    [attachments]
+    () =>
+      attachments.filter(
+        (a) => a.type.startsWith("image/") && a.status !== "failed",
+      ),
+    [attachments],
   );
 
   const openLightbox = (localId: string) => {
-    const index = previewableImages.findIndex((item) => item.localId === localId);
+    const index = previewableImages.findIndex(
+      (item) => item.localId === localId,
+    );
     if (index < 0) return;
     setLightboxIndex(index);
     setLightboxOpen(true);
@@ -350,7 +396,11 @@ export function MemoComposer({
       return;
     }
 
-    const croppedFile = await cropWithCanvas(image, completedCrop, session.file);
+    const croppedFile = await cropWithCanvas(
+      image,
+      completedCrop,
+      session.file,
+    );
     finishCropSession(croppedFile);
   };
 
@@ -372,7 +422,9 @@ export function MemoComposer({
     const pending = filesWithCrop.map((file) => ({
       file,
       localId: createLocalId(),
-      previewUrl: file.type.startsWith("image/") ? URL.createObjectURL(file) : "",
+      previewUrl: file.type.startsWith("image/")
+        ? URL.createObjectURL(file)
+        : "",
     }));
 
     setAttachments((prev) => [
@@ -399,12 +451,12 @@ export function MemoComposer({
               return {
                 ...a,
                 status: "uploaded",
-                previewUrl: resource.externalLink,
+                previewUrl: resource.externalLink ?? "",
                 resource,
                 type: resource.type,
                 filename: resource.filename,
               };
-            })
+            }),
           );
         } catch {
           setAttachments((prev) =>
@@ -414,11 +466,11 @@ export function MemoComposer({
                     ...a,
                     status: "failed",
                   }
-                : a
-            )
+                : a,
+            ),
           );
         }
-      })
+      }),
     );
 
     if (fileInputRef.current) {
@@ -441,7 +493,10 @@ export function MemoComposer({
   return (
     <div
       ref={rootRef}
-      className={cn("rounded-xl border bg-card text-card-foreground overflow-hidden", className)}
+      className={cn(
+        "rounded-xl border bg-card text-card-foreground overflow-hidden",
+        className,
+      )}
       onFocusCapture={onFocusInside}
       onBlurCapture={(e) => {
         const nextTarget = e.relatedTarget as Node | null;
@@ -506,7 +561,9 @@ export function MemoComposer({
                       <Loader2 className="absolute top-1 right-1 w-3 h-3 animate-spin text-primary" />
                     )}
                     {attachment.status === "failed" && (
-                      <span className="absolute bottom-1 left-1 right-1 text-destructive font-medium">{t("common.failed")}</span>
+                      <span className="absolute bottom-1 left-1 right-1 text-destructive font-medium">
+                        {t("common.failed")}
+                      </span>
                     )}
                   </div>
                 )}
@@ -524,7 +581,12 @@ export function MemoComposer({
         </div>
       )}
 
-      <div className={cn("flex justify-between items-center border-t border-border/50 px-4 py-3 bg-muted/30", footerClassName)}>
+      <div
+        className={cn(
+          "flex justify-between items-center border-t border-border/50 px-4 py-3 bg-muted/30",
+          footerClassName,
+        )}
+      >
         <div className="flex items-center gap-2">
           {leftActions}
           <Button
@@ -535,13 +597,29 @@ export function MemoComposer({
             onClick={() => fileInputRef.current?.click()}
             disabled={isSubmitting}
           >
-            {isUploadingAny ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4 text-muted-foreground" />}
+            {isUploadingAny ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <ImageIcon className="w-4 h-4 text-muted-foreground" />
+            )}
           </Button>
-          <input type="file" ref={fileInputRef} className="hidden" multiple onChange={handleFileChange} />
+          <input
+            type="file"
+            ref={fileInputRef}
+            className="hidden"
+            multiple
+            onChange={handleFileChange}
+          />
         </div>
 
         <div className="flex items-center gap-2">
-          <Button type="button" size="sm" onClick={handleSubmit} className={cn("gap-2", submitClassName)} disabled={!canSubmit}>
+          <Button
+            type="button"
+            size="sm"
+            onClick={handleSubmit}
+            className={cn("gap-2", submitClassName)}
+            disabled={!canSubmit}
+          >
             <Send className="w-4 h-4" />
             {isSubmitting ? submittingLabel : submitLabel}
           </Button>
@@ -588,7 +666,9 @@ export function MemoComposer({
                     ref={cropImageRef}
                     onLoad={(event) => {
                       const image = event.currentTarget;
-                      setCrop(getCenteredCrop(image.width, image.height, cropAspect));
+                      setCrop(
+                        getCenteredCrop(image.width, image.height, cropAspect),
+                      );
                     }}
                   />
                 </ReactCrop>
@@ -596,10 +676,14 @@ export function MemoComposer({
             </div>
 
             <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">{t("createMemo.cropAspect")}</p>
+              <p className="text-sm text-muted-foreground">
+                {t("createMemo.cropAspect")}
+              </p>
               <div className="flex flex-wrap gap-2">
                 {ASPECT_OPTIONS.map((option) => {
-                  const selected = cropAspect === option.value || (!option.value && !cropAspect);
+                  const selected =
+                    cropAspect === option.value ||
+                    (!option.value && !cropAspect);
                   return (
                     <Button
                       key={option.key}
@@ -610,18 +694,28 @@ export function MemoComposer({
                         setCropAspect(option.value);
                         const image = cropImageRef.current;
                         if (image) {
-                          setCrop(getCenteredCrop(image.width, image.height, option.value));
+                          setCrop(
+                            getCenteredCrop(
+                              image.width,
+                              image.height,
+                              option.value,
+                            ),
+                          );
                         }
                       }}
                     >
-                      {option.value ? option.label : t("createMemo.cropAspectFree")}
+                      {option.value
+                        ? option.label
+                        : t("createMemo.cropAspectFree")}
                     </Button>
                   );
                 })}
               </div>
             </div>
 
-            <p className="text-xs text-muted-foreground">{t("createMemo.cropHint")}</p>
+            <p className="text-xs text-muted-foreground">
+              {t("createMemo.cropHint")}
+            </p>
 
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={handleCropSkip}>

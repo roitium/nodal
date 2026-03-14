@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { resourcesAPI } from "~/lib/api";
+import { client } from "~/lib/rpc";
 import { toast } from "sonner";
 import axios from "axios";
 
@@ -11,7 +11,18 @@ export function useUpload() {
     try {
       const ext = file.name.split(".").pop() || "";
       // 1. Get signed URL
-      const { data: urlData } = await resourcesAPI.getUploadUrl(file.type, ext);
+      const uploadUrlResponse = await client.api.v1.resources[
+        "upload-url"
+      ].$get({
+        query: { fileType: file.type, ext },
+      });
+      const urlData = await uploadUrlResponse.json();
+      if (!uploadUrlResponse.ok || urlData.error) {
+        throw new Error(urlData.error ?? "Failed to get upload URL");
+      }
+      if (!urlData.data) {
+        throw new Error("Failed to get upload URL");
+      }
       const { uploadUrl, path, signature } = urlData.data;
 
       // 2. Upload directly to storage (e.g. Supabase)
@@ -22,17 +33,28 @@ export function useUpload() {
       });
 
       // 3. Record upload in backend
-      const { data: resourceData } = await resourcesAPI.recordUpload({
-        path,
-        fileType: file.type,
-        fileSize: file.size,
-        filename: file.name,
-        signature: signature,
+      const recordResponse = await client.api.v1.resources[
+        "record-upload"
+      ].$post({
+        json: {
+          path,
+          fileType: file.type,
+          fileSize: file.size,
+          filename: file.name,
+          signature: signature,
+        },
       });
+      const resourceData = await recordResponse.json();
+      if (!recordResponse.ok || resourceData.error) {
+        throw new Error(resourceData.error ?? "Failed to record upload");
+      }
+      if (!resourceData.data) {
+        throw new Error("Failed to record upload");
+      }
 
       return resourceData.data;
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to upload file");
+      toast.error(error?.message || "Failed to upload file");
       throw error;
     } finally {
       setIsUploading(false);

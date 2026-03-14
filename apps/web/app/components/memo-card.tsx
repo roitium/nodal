@@ -1,9 +1,18 @@
 import React, { useState } from "react";
 import { format, formatDistanceToNow, differenceInHours } from "date-fns";
 import { zhCN, enUS } from "date-fns/locale";
+import type { InferResponseType } from "hono/client";
 import ReactMarkdown from "react-markdown";
-import { MoreHorizontal, Pin, Lock, Globe, Trash2, Edit, MessageCircle } from "lucide-react";
-import type { Memo } from "~/lib/api";
+import {
+  MoreHorizontal,
+  Pin,
+  Lock,
+  Globe,
+  Trash2,
+  Edit,
+  MessageCircle,
+} from "lucide-react";
+import { client } from "~/lib/rpc";
 import { useDeleteMemo } from "~/hooks/mutations/use-delete-memo";
 import { useUpdateMemo } from "~/hooks/mutations/use-update-memo";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
@@ -27,11 +36,31 @@ import {
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { ReplyDialog } from "./reply-dialog";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "~/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "~/components/ui/tooltip";
 import { MemoComposer } from "~/components/memo-composer";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
 import { useLightboxHistory } from "~/hooks/use-lightbox-history";
-import { markdownComponents, markdownRehypePlugins, markdownRemarkPlugins } from "~/lib/markdown";
+import {
+  markdownComponents,
+  markdownRehypePlugins,
+  markdownRemarkPlugins,
+} from "~/lib/markdown";
+
+type Memo = InferResponseType<
+  (typeof client.api.v1.memos)[":id"]["$get"],
+  200
+>["data"];
 
 interface MemoCardProps {
   memo: Memo;
@@ -44,8 +73,8 @@ export function MemoCard({ memo, isDetail = false }: MemoCardProps) {
   const updateMutation = useUpdateMemo();
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  
-  const dateLocale = i18n.language.startsWith('zh') ? zhCN : enUS;
+
+  const dateLocale = i18n.language.startsWith("zh") ? zhCN : enUS;
   const createdAt = new Date(memo.createdAt);
   const isWithinOneDay = differenceInHours(new Date(), createdAt) < 24;
   const displayTime = isWithinOneDay
@@ -56,17 +85,22 @@ export function MemoCard({ memo, isDetail = false }: MemoCardProps) {
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(memo.content);
-  const [editVisibility, setEditVisibility] = useState<"public" | "private">(memo.visibility);
+  const [editVisibility, setEditVisibility] = useState<"public" | "private">(
+    memo.visibility,
+  );
   const [isReplying, setIsReplying] = useState(false);
   const [editResetSignal, setEditResetSignal] = useState(0);
-  const { closeWithHistory } = useLightboxHistory(lightboxOpen, setLightboxOpen);
+  const { closeWithHistory } = useLightboxHistory(
+    lightboxOpen,
+    setLightboxOpen,
+  );
 
   const isOwner = currentUser?.id === memo.userId;
-  const imageResources = memo.resources?.filter((r) => r.type.startsWith("image/")) || [];
+  const imageResources =
+    memo.resources?.filter((r) => r.type.startsWith("image/")) || [];
   const canSaveEdit =
-    editContent.trim().length > 0 &&
-    !updateMutation.isPending;
-  
+    editContent.trim().length > 0 && !updateMutation.isPending;
+
   // @ts-ignore - subReplyCount is injected by backend extras
   const replyCount = memo.replies?.length || memo.subReplyCount || 0;
 
@@ -125,19 +159,25 @@ export function MemoCard({ memo, isDetail = false }: MemoCardProps) {
 
   return (
     <>
-      <div 
+      <div
         onClick={handleCardClick}
-        className={`surface-card interactive-lift mb-3 flex gap-3 rounded-2xl p-3.5 md:p-4 ${!isDetail ? 'cursor-pointer hover:bg-accent/25' : ''}`}
+        className={`surface-card interactive-lift mb-3 flex gap-3 rounded-2xl p-3.5 md:p-4 ${!isDetail ? "cursor-pointer hover:bg-accent/25" : ""}`}
       >
         <div className="shrink-0 pt-0.5">
-          <button type="button" onClick={handleAuthorClick} className="touch-target rounded-full">
+          <button
+            type="button"
+            onClick={handleAuthorClick}
+            className="touch-target rounded-full"
+          >
             <Avatar className="w-10 h-10">
-              <AvatarImage src={memo.author.avatarUrl} />
-              <AvatarFallback>{memo.author.username.slice(0, 2).toUpperCase()}</AvatarFallback>
+              <AvatarImage src={memo.author.avatarUrl ?? undefined} />
+              <AvatarFallback>
+                {memo.author.username.slice(0, 2).toUpperCase()}
+              </AvatarFallback>
             </Avatar>
           </button>
         </div>
-        
+
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between">
             <div className="mb-1 flex flex-wrap items-center gap-1.5 text-sm leading-5">
@@ -156,31 +196,41 @@ export function MemoCard({ memo, isDetail = false }: MemoCardProps) {
                 @{memo.author.username}
               </button>
               <span className="text-muted-foreground">·</span>
-              <span className="text-muted-foreground">
-                {displayTime}
-              </span>
-              
+              <span className="text-muted-foreground">{displayTime}</span>
+
               <TooltipProvider delayDuration={200}>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <div className="ml-1 text-muted-foreground/70">
-                      {memo.visibility === "private" ? <Lock className="w-3.5 h-3.5" /> : <Globe className="w-3.5 h-3.5" />}
+                      {memo.visibility === "private" ? (
+                        <Lock className="w-3.5 h-3.5" />
+                      ) : (
+                        <Globe className="w-3.5 h-3.5" />
+                      )}
                     </div>
                   </TooltipTrigger>
                   <TooltipContent>
-                    {memo.visibility === "private" ? t("createMemo.private") : t("createMemo.public")}
+                    {memo.visibility === "private"
+                      ? t("createMemo.private")
+                      : t("createMemo.public")}
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
 
-              {memo.isPinned && <Pin className="ml-1 h-3.5 w-3.5 text-primary" />}
+              {memo.isPinned && (
+                <Pin className="ml-1 h-3.5 w-3.5 text-primary" />
+              )}
             </div>
-            
+
             {isOwner && (
               <div onClick={(e) => e.stopPropagation()}>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="touch-target -mr-1 -mt-1 h-9 w-9 rounded-full text-muted-foreground hover:bg-accent/65 hover:text-foreground">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="touch-target -mr-1 -mt-1 h-9 w-9 rounded-full text-muted-foreground hover:bg-accent/65 hover:text-foreground"
+                    >
                       <MoreHorizontal className="w-4 h-4" />
                     </Button>
                   </DropdownMenuTrigger>
@@ -201,7 +251,10 @@ export function MemoCard({ memo, isDetail = false }: MemoCardProps) {
                       {memo.isPinned ? t("memoCard.unpin") : t("memoCard.pin")}
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleDelete} className="text-destructive focus:text-destructive">
+                    <DropdownMenuItem
+                      onClick={handleDelete}
+                      className="text-destructive focus:text-destructive"
+                    >
                       <Trash2 className="w-4 h-4 mr-2" />
                       {t("memoCard.delete")}
                     </DropdownMenuItem>
@@ -211,7 +264,9 @@ export function MemoCard({ memo, isDetail = false }: MemoCardProps) {
             )}
           </div>
 
-          <div className={`prose dark:prose-invert max-w-none wrap-break-word prose-p:leading-6 prose-a:text-primary ${isDetail ? 'prose-base' : 'prose-sm'}`}>
+          <div
+            className={`prose dark:prose-invert max-w-none wrap-break-word prose-p:leading-6 prose-a:text-primary ${isDetail ? "prose-base" : "prose-sm"}`}
+          >
             <ReactMarkdown
               components={markdownComponents as any}
               rehypePlugins={markdownRehypePlugins as any}
@@ -220,7 +275,7 @@ export function MemoCard({ memo, isDetail = false }: MemoCardProps) {
               {memo.content}
             </ReactMarkdown>
           </div>
-          
+
           {imageResources.length > 0 && (
             <div className="mt-3 grid grid-cols-2 gap-2 pr-0 sm:pr-2 md:pr-4">
               {imageResources.map((resource, index) => (
@@ -231,7 +286,7 @@ export function MemoCard({ memo, isDetail = false }: MemoCardProps) {
                   onClick={(e) => openLightbox(e, index)}
                 >
                   <img
-                    src={resource.externalLink}
+                    src={resource.externalLink ?? ""}
                     alt={resource.filename}
                     className="h-auto max-h-80 w-full object-contain"
                   />
@@ -241,7 +296,7 @@ export function MemoCard({ memo, isDetail = false }: MemoCardProps) {
           )}
 
           <div className="mt-3 flex items-center gap-5 text-muted-foreground">
-            <button 
+            <button
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -262,7 +317,10 @@ export function MemoCard({ memo, isDetail = false }: MemoCardProps) {
         open={lightboxOpen}
         close={closeWithHistory}
         index={lightboxIndex}
-        slides={imageResources.map((img) => ({ src: img.externalLink }))}
+        slides={imageResources
+          .map((img) => img.externalLink)
+          .filter((src): src is string => Boolean(src))
+          .map((src) => ({ src }))}
         controller={{ closeOnBackdropClick: true }}
       />
 
@@ -296,7 +354,9 @@ export function MemoCard({ memo, isDetail = false }: MemoCardProps) {
             leftActions={
               <Select
                 value={editVisibility}
-                onValueChange={(val: "public" | "private") => setEditVisibility(val)}
+                onValueChange={(val: "public" | "private") =>
+                  setEditVisibility(val)
+                }
               >
                 <SelectTrigger className="w-[120px] h-9 bg-background">
                   <SelectValue />
@@ -322,11 +382,7 @@ export function MemoCard({ memo, isDetail = false }: MemoCardProps) {
         </DialogContent>
       </Dialog>
 
-      <ReplyDialog 
-        memo={memo} 
-        open={isReplying} 
-        onOpenChange={setIsReplying} 
-      />
+      <ReplyDialog memo={memo} open={isReplying} onOpenChange={setIsReplying} />
     </>
   );
 }

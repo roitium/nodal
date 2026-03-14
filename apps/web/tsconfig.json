@@ -14,6 +14,7 @@
     "jsx": "react-jsx",
     "rootDirs": [".", "./.react-router/types"],
     "paths": {
+      "@/*": ["../backend-hono/src/*"],
       "~/*": ["./app/*"],
       "*": ["./*"]
     },
