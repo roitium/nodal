@@ -1,17 +1,18 @@
-import type { CloudflareBindings } from "@/types/env";
+import type { CloudflareBindings, ResolvedCloudflareEnv } from "@/types/env";
 import type { IStorageProvider } from "@/services/storage/interface";
+import { R2StorageProvider } from "@/services/storage/providers/r2";
 import { SupabaseStorageProvider } from "@/services/storage/providers/supabase";
-import { resolveEnv } from "@/utils/env";
 
 export function createStorageService(
-  env: CloudflareBindings,
+  env: ResolvedCloudflareEnv,
+  bindings?: Partial<CloudflareBindings>,
 ): IStorageProvider {
-  const resolvedEnv = resolveEnv(env);
-  const provider = resolvedEnv.STORAGE_PROVIDER;
-
-  switch (provider) {
+  switch (env.STORAGE_PROVIDER) {
+    case "r2": {
+      return new R2StorageProvider(env);
+    }
     case "supabase":
     default:
-      return new SupabaseStorageProvider(resolvedEnv);
+      return new SupabaseStorageProvider(env);
   }
 }

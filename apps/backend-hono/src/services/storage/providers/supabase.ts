@@ -1,7 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
-import type { CloudflareBindings } from "@/types/env";
+import type { ResolvedCloudflareEnv } from "@/types/env";
 import type {
   IStorageProvider,
+  StoredObjectMeta,
   UploadResult,
 } from "@/services/storage/interface";
 
@@ -11,14 +12,14 @@ export class SupabaseStorageProvider implements IStorageProvider {
   private url: string;
   readonly providerName = "supabase";
 
-  constructor(env: CloudflareBindings) {
+  constructor(env: ResolvedCloudflareEnv) {
     if (
       !env.SUPABASE_URL ||
       !env.SUPABASE_SERVICE_ROLE_KEY ||
       !env.STORAGE_BUCKET
     ) {
       throw new Error(
-        "SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY or STORAGE_BUCKET not found",
+        "SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY and STORAGE_BUCKET are required for supabase storage",
       );
     }
 
@@ -43,6 +44,41 @@ export class SupabaseStorageProvider implements IStorageProvider {
       headers: {
         token: data.token,
       },
+    };
+  }
+
+  async headFile(path: string): Promise<StoredObjectMeta | null> {
+    const { data: signed, error: signedError } = await this.client.storage
+      .from(this.bucket)
+      .createSignedUrl(path, 60);
+
+    if (signedError || !signed?.signedUrl) {
+      return null;
+    }
+
+    const response = await fetch(signed.signedUrl, { method: "HEAD" });
+
+    if (response.status === 404) {
+      return null;
+    }
+
+    if (!response.ok) {
+      throw new Error(`Supabase Storage HEAD failed: ${response.status}`);
+    }
+
+    const size = Number.parseInt(
+      response.headers.get("content-length") ?? "",
+      10,
+    );
+    const contentType = response.headers.get("content-type") ?? undefined;
+
+    if (!Number.isFinite(size) || size < 0) {
+      throw new Error("Supabase Storage HEAD missing content-length");
+    }
+
+    return {
+      size,
+      contentType,
     };
   }
 

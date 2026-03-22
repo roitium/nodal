@@ -23,12 +23,15 @@ export function useUpload() {
       if (!urlData.data) {
         throw new Error("Failed to get upload URL");
       }
-      const { uploadUrl, path, signature } = urlData.data;
+      const { uploadUrl, path, signature, headers } = urlData.data;
+      const token = localStorage.getItem("token");
 
       // 2. Upload directly to storage (e.g. Supabase)
       await axios.put(uploadUrl, file, {
         headers: {
           "Content-Type": file.type,
+          ...(headers || {}),
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
       });
 

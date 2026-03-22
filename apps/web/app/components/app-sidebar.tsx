@@ -15,9 +15,9 @@ import { useUser } from "~/hooks/queries/use-user";
 import {
   Home,
   Compass,
+  Search,
   Settings,
   LogOut,
-  Download,
   UserRound,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
@@ -30,8 +30,6 @@ import {
 } from "~/components/ui/dropdown-menu";
 import { useTranslation } from "react-i18next";
 import { Heatmap } from "~/components/heatmap";
-import { usePWAInstall } from "~/hooks/use-pwa-install";
-import { toast } from "sonner";
 
 export function AppSidebar() {
   const { data: user } = useUser();
@@ -39,26 +37,11 @@ export function AppSidebar() {
   const location = useLocation();
   const { isMobile, setOpenMobile } = useSidebar();
   const { t } = useTranslation();
-  const { isInstallable, isInstalled, isIOS, promptInstall } = usePWAInstall();
-  const canShowInstallAction = !isInstalled;
 
   const closeMobileSidebar = () => {
     if (isMobile) {
       setOpenMobile(false);
     }
-  };
-
-  const handleInstallClick = () => {
-    if (isInstallable) {
-      void promptInstall();
-      return;
-    }
-
-    toast.message(t("pwa.installHintTitle"), {
-      description: isIOS
-        ? t("pwa.installHintDesc")
-        : t("pwa.installUnavailableDesc"),
-    });
   };
 
   const handleLogout = () => {
@@ -110,14 +93,14 @@ export function AppSidebar() {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              {canShowInstallAction && (
-                <SidebarMenuItem>
-                  <SidebarMenuButton onClick={handleInstallClick}>
-                    <Download className="h-4 w-4" />
-                    <span>{t("sidebar.installApp")}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isActive("/search")}>
+                  <Link to="/search" onClick={closeMobileSidebar}>
+                    <Search className="h-4 w-4" />
+                    <span>{t("sidebar.search")}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={isActive("/settings")}>
                   <Link to="/settings" onClick={closeMobileSidebar}>

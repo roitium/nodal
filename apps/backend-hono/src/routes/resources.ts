@@ -61,6 +61,7 @@ export const resourcesRoutes = new Hono<{ Bindings: CloudflareBindings }>()
     const user = c.get("user");
     const traceId = c.get("traceId");
     const jwt = c.get("jwt");
+    const env = c.get("env");
     const query = c.req.valid("query");
 
     if (!user) {
@@ -105,7 +106,7 @@ export const resourcesRoutes = new Hono<{ Bindings: CloudflareBindings }>()
     };
 
     const token = await jwt.sign(payload);
-    const storageService = createStorageService(c.env);
+    const storageService = createStorageService(env, c.env);
     const result = await storageService.getUploadUrl(path, fileType);
 
     return c.json(
@@ -124,6 +125,7 @@ export const resourcesRoutes = new Hono<{ Bindings: CloudflareBindings }>()
       const db = c.get("db");
       const traceId = c.get("traceId");
       const jwt = c.get("jwt");
+      const env = c.get("env");
       const body = c.req.valid("json");
 
       if (!user) {
@@ -173,7 +175,50 @@ export const resourcesRoutes = new Hono<{ Bindings: CloudflareBindings }>()
         );
       }
 
-      const storageService = createStorageService(c.env);
+      const storageService = createStorageService(env, c.env);
+
+      const objectMeta = await storageService.headFile(path);
+      if (!objectMeta) {
+        return c.json(
+          fail({
+            message: "文件不存在或尚未上传完成",
+            traceId,
+            code: ResourceCode.NotFound,
+          }),
+          404,
+        );
+      }
+
+      if (objectMeta.size !== fileSize) {
+        return c.json(
+          fail({
+            message: "文件大小与上传记录不一致",
+            traceId,
+            code: ResourceCode.illegalParam,
+          }),
+          400,
+        );
+      }
+
+      const normalizedStoredType = objectMeta.contentType
+        ?.split(";")[0]
+        ?.trim();
+      const normalizedRequestedType = fileType.split(";")[0]?.trim();
+      if (
+        normalizedStoredType &&
+        normalizedRequestedType &&
+        normalizedStoredType !== normalizedRequestedType
+      ) {
+        return c.json(
+          fail({
+            message: "文件类型与上传记录不一致",
+            traceId,
+            code: ResourceCode.illegalParam,
+          }),
+          400,
+        );
+      }
+
       const publicUrl = storageService.getPublicUrl(path);
 
       const [result] = await db

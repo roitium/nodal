@@ -1,6 +1,6 @@
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import type * as schema from "@/db/schema";
-import type { SessionPayload, SessionUser } from "@/types/env";
+import type { ResolvedCloudflareEnv, SessionUser } from "@/types/env";
 
 type JwtHelper = {
   sign: (payload: Record<string, unknown>) => Promise<string>;
@@ -9,6 +9,7 @@ type JwtHelper = {
 
 declare module "hono" {
   interface ContextVariableMap {
+    env: ResolvedCloudflareEnv;
     traceId: string;
     tenant: string | null;
     user: SessionUser | null;

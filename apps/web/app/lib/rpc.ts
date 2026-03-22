@@ -1,8 +1,10 @@
 import { hc } from "hono/client";
 import type { AppType } from "../../../backend-hono/src/index";
-import { webEnv } from "./env";
 
-export const API_BASE_URL = webEnv.API_BASE_URL;
+export const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ||
+  import.meta.env.VITE_API_URL ||
+  "http://localhost:8787/api/v1";
 
 const RPC_BASE_URL = API_BASE_URL.replace(/\/api\/v1\/?$/, "");
 

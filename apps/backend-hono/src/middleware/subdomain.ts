@@ -1,11 +1,11 @@
 import type { MiddlewareHandler } from "hono";
 import type { CloudflareBindings } from "@/types/env";
-import { getEnv } from "@/utils/env";
 
 export const subdomainMiddleware: MiddlewareHandler<{
   Bindings: CloudflareBindings;
 }> = async (c, next) => {
-  const rootDomain = getEnv(c.env, "ROOT_DOMAIN");
+  const env = c.get("env");
+  const rootDomain = env.ROOT_DOMAIN;
   const host = c.req.header("host");
 
   // ROOT_DOMAIN may be missing in local/dev env. In that case, disable tenant parsing.

@@ -3,6 +3,7 @@ import { cors } from "hono/cors";
 import type {} from "@/types/hono";
 import { authMiddleware } from "@/middleware/auth";
 import { dbMiddleware } from "@/middleware/db";
+import { envMiddleware } from "@/middleware/env";
 import { subdomainMiddleware } from "@/middleware/subdomain";
 import { traceIdMiddleware } from "@/middleware/trace";
 import { authRoutes } from "@/routes/auth";
@@ -31,6 +32,7 @@ app.use(
 );
 
 app.use("*", traceIdMiddleware);
+app.use("/api/v1/*", envMiddleware);
 app.use("/api/v1/*", dbMiddleware);
 app.use("/api/v1/*", authMiddleware);
 app.use("/api/v1/*", subdomainMiddleware);

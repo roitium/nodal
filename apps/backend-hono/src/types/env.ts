@@ -1,24 +1,41 @@
-export type StorageProvider = "supabase" | (string & {});
+import { type } from "arktype";
 
+// Hono 需要这个类型作为 Bindings 元数据
 export type CloudflareBindings = {
-  DATABASE_URL: string;
-  JWT_SECRET: string;
+  DATABASE_URL?: string;
+  JWT_SECRET?: string;
   ROOT_DOMAIN?: string;
-  SUPABASE_URL: string;
-  SUPABASE_SERVICE_ROLE_KEY: string;
-  STORAGE_BUCKET: string;
-  STORAGE_PROVIDER?: StorageProvider;
+  SUPABASE_URL?: string;
+  SUPABASE_SERVICE_ROLE_KEY?: string;
+  STORAGE_BUCKET?: string;
+  STORAGE_PROVIDER?: string;
+  R2_PUBLIC_BASE_URL?: string;
+  S3_ENDPOINT?: string;
+  S3_ACCESS_KEY_ID?: string;
+  S3_SECRET_ACCESS_KEY?: string;
+  S3_REGION?: string;
 };
 
-export type ResolvedCloudflareEnv = {
-  DATABASE_URL: string;
-  JWT_SECRET: string;
-  ROOT_DOMAIN?: string;
-  SUPABASE_URL: string;
-  SUPABASE_SERVICE_ROLE_KEY: string;
-  STORAGE_BUCKET: string;
-  STORAGE_PROVIDER: StorageProvider;
-};
+// 使用 arktype 定义解析后的环境变量 schema
+const CloudflareEnvSchema = type({
+  DATABASE_URL: "string",
+  JWT_SECRET: "string",
+  ROOT_DOMAIN: "string | undefined",
+  SUPABASE_URL: "string | undefined",
+  SUPABASE_SERVICE_ROLE_KEY: "string | undefined",
+  STORAGE_BUCKET: "string | undefined",
+  STORAGE_PROVIDER: "string | undefined",
+  R2_PUBLIC_BASE_URL: "string | undefined",
+  S3_ENDPOINT: "string | undefined",
+  S3_ACCESS_KEY_ID: "string | undefined",
+  S3_SECRET_ACCESS_KEY: "string | undefined",
+  S3_REGION: "string | undefined",
+});
+
+// 从 schema 推导最终的类型
+export type ResolvedCloudflareEnv = typeof CloudflareEnvSchema.infer;
+
+export { CloudflareEnvSchema };
 
 export type SessionUser = {
   id: string;
