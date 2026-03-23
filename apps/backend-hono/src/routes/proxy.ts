@@ -1,7 +1,7 @@
 import { arktypeValidator } from "@hono/arktype-validator";
 import { type } from "arktype";
 import { Hono } from "hono";
-import type { CloudflareBindings } from "@/types/env";
+import type { Env } from "@/types/env";
 import { GeneralCode } from "@/utils/code";
 import { fail, success } from "@/utils/response";
 
@@ -67,7 +67,7 @@ function buildFallback(bvid: string) {
   };
 }
 
-export const proxyRoutes = new Hono<{ Bindings: CloudflareBindings }>()
+export const proxyRoutes = new Hono<{ Bindings: Env }>()
   .get(
     "/bilibili/view",
     arktypeValidator("query", bilibiliViewQuery),

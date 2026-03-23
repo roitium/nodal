@@ -4,7 +4,7 @@ import { eq, or } from "drizzle-orm";
 import { Hono } from "hono";
 import { v7 as uuidv7 } from "uuid";
 import { users } from "@/db/schema";
-import type { CloudflareBindings } from "@/types/env";
+import type { Env } from "@/types/env";
 import { AuthCode, GeneralCode } from "@/utils/code";
 import { hashPassword, verifyPassword } from "@/utils/password";
 import { fail, success } from "@/utils/response";
@@ -38,7 +38,7 @@ async function sha256Hex(input: string) {
   return hashArray.map((v) => v.toString(16).padStart(2, "0")).join("");
 }
 
-export const authRoutes = new Hono<{ Bindings: CloudflareBindings }>()
+export const authRoutes = new Hono<{ Bindings: Env }>()
   .post("/register", arktypeValidator("json", registerBody), async (c) => {
     const body = c.req.valid("json");
     const db = c.get("db");

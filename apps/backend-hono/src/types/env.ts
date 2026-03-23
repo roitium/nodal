@@ -1,7 +1,7 @@
 import { type } from "arktype";
 
 // Hono 需要这个类型作为 Bindings 元数据
-export type CloudflareBindings = {
+export type Env = {
   DATABASE_URL?: string;
   JWT_SECRET?: string;
   ROOT_DOMAIN?: string;

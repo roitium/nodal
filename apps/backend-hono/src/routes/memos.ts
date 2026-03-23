@@ -8,7 +8,7 @@ import {
   version as uuidVersion,
 } from "uuid";
 import { memos, resources, users } from "@/db/schema";
-import type { CloudflareBindings } from "@/types/env";
+import type { Env } from "@/types/env";
 import { GeneralCode, MemoCode, UserCode } from "@/utils/code";
 import { fail, success } from "@/utils/response";
 
@@ -114,7 +114,7 @@ const memoWith = {
   },
 } as const;
 
-export const memosRoutes = new Hono<{ Bindings: CloudflareBindings }>()
+export const memosRoutes = new Hono<{ Bindings: Env }>()
   .get("/timeline", arktypeValidator("query", timelineQuery), async (c) => {
     const user = c.get("user");
     const query = c.req.valid("query");

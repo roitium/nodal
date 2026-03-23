@@ -5,7 +5,7 @@ import { Hono } from "hono";
 import { v7 as uuidv7 } from "uuid";
 import { resources } from "@/db/schema";
 import { createStorageService } from "@/services/storage";
-import type { CloudflareBindings } from "@/types/env";
+import type { Env } from "@/types/env";
 import { GeneralCode, ResourceCode } from "@/utils/code";
 import { fail, success } from "@/utils/response";
 
@@ -22,7 +22,7 @@ const recordUploadBody = type({
   signature: "string >= 1",
 });
 
-export const resourcesRoutes = new Hono<{ Bindings: CloudflareBindings }>()
+export const resourcesRoutes = new Hono<{ Bindings: Env }>()
   .get("/:id", async (c) => {
     const { id } = c.req.param();
     const user = c.get("user");

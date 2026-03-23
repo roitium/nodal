@@ -10,11 +10,11 @@ import { authRoutes } from "@/routes/auth";
 import { memosRoutes } from "@/routes/memos";
 import { proxyRoutes } from "@/routes/proxy";
 import { resourcesRoutes } from "@/routes/resources";
-import type { CloudflareBindings } from "@/types/env";
+import type { Env } from "@/types/env";
 import { GeneralCode } from "@/utils/code";
 import { fail } from "@/utils/response";
 
-const app = new Hono<{ Bindings: CloudflareBindings }>();
+const app = new Hono<{ Bindings: Env }>();
 
 // CORS 配置
 app.use(

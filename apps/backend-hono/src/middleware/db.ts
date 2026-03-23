@@ -1,9 +1,9 @@
 import type { MiddlewareHandler } from "hono";
 import { getDb } from "@/db/db";
-import type { CloudflareBindings } from "@/types/env";
+import type { Env } from "@/types/env";
 
 export const dbMiddleware: MiddlewareHandler<{
-  Bindings: CloudflareBindings;
+  Bindings: Env;
 }> = async (c, next) => {
   const env = c.get("env");
   const databaseUrl = env.DATABASE_URL;

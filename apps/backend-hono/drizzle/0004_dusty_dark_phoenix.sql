@@ -1,1 +1,0 @@
-ALTER TABLE "memos" ALTER COLUMN "is_pinned" SET NOT NULL;

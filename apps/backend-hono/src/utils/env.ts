@@ -1,5 +1,5 @@
 import { ArkErrors } from "arktype";
-import type { CloudflareBindings, ResolvedCloudflareEnv } from "@/types/env";
+import type { Env, ResolvedCloudflareEnv } from "@/types/env";
 import { CloudflareEnvSchema } from "@/types/env";
 
 /**
@@ -8,7 +8,7 @@ import { CloudflareEnvSchema } from "@/types/env";
  * @throws 如果必需的环境变量缺失或验证失败
  */
 export function parseCloudflareEnv(
-  bindings: Partial<CloudflareBindings> | undefined,
+  bindings: Partial<Env> | undefined,
 ): ResolvedCloudflareEnv {
   const merged = {
     DATABASE_URL: bindings?.DATABASE_URL,

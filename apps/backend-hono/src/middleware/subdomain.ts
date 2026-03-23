@@ -1,8 +1,8 @@
 import type { MiddlewareHandler } from "hono";
-import type { CloudflareBindings } from "@/types/env";
+import type { Env } from "@/types/env";
 
 export const subdomainMiddleware: MiddlewareHandler<{
-  Bindings: CloudflareBindings;
+  Bindings: Env;
 }> = async (c, next) => {
   const env = c.get("env");
   const rootDomain = env.ROOT_DOMAIN;

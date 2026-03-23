@@ -1,9 +1,9 @@
 import type { MiddlewareHandler } from "hono";
 import { sign, verify } from "hono/jwt";
-import type { CloudflareBindings } from "@/types/env";
+import type { Env } from "@/types/env";
 
 export const authMiddleware: MiddlewareHandler<{
-  Bindings: CloudflareBindings;
+  Bindings: Env;
 }> = async (c, next) => {
   const env = c.get("env");
   const secret = env.JWT_SECRET;
