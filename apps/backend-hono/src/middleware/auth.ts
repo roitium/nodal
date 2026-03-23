@@ -19,10 +19,9 @@ export const authMiddleware: MiddlewareHandler<HonoBindings> = async (c, next) =
         }
 
         return {
+          ...payload,
           sub: String(payload.sub),
           username: String(payload.username),
-          exp: typeof payload.exp === "number" ? payload.exp : undefined,
-          iat: typeof payload.iat === "number" ? payload.iat : undefined,
         };
       } catch {
         return false;
