@@ -9,11 +9,29 @@ import {
 } from "uuid";
 import { memos, resources, users } from "@/db/schema";
 import { createStorageService } from "@/services/storage";
-import type { Env } from "@/types/env";
+import type { HonoBindings } from "@/types/hono";
 import type { StorageConfig } from "@/types/storage-config";
-import { getStorageConfig } from "@/utils/settings";
+import type { Env } from "@/types/env";
 import { GeneralCode, MemoCode, UserCode } from "@/utils/code";
 import { fail, success } from "@/utils/response";
+
+function getStorageConfig(env: Env): StorageConfig {
+  const provider = env.STORAGE_PROVIDER || "supabase";
+  if (provider !== "supabase" && provider !== "s3" && provider !== "r2") {
+    throw new Error(`Invalid storage provider: ${provider}`);
+  }
+  return {
+    STORAGE_PROVIDER: provider,
+    STORAGE_BUCKET: env.STORAGE_BUCKET || "",
+    SUPABASE_URL: env.SUPABASE_URL,
+    SUPABASE_SERVICE_ROLE_KEY: env.SUPABASE_SERVICE_ROLE_KEY,
+    S3_ENDPOINT: env.S3_ENDPOINT,
+    S3_PUBLIC_URL: env.S3_PUBLIC_URL,
+    S3_REGION: env.S3_REGION,
+    S3_ACCESS_KEY_ID: env.S3_ACCESS_KEY_ID,
+    S3_SECRET_ACCESS_KEY: env.S3_SECRET_ACCESS_KEY,
+  };
+}
 
 interface ResourceWithPath {
   id: string;
@@ -167,7 +185,7 @@ const memoWith = {
   },
 } as const;
 
-export const memosRoutes = new Hono<{ Bindings: Env }>()
+export const memosRoutes = new Hono<HonoBindings>()
   .get("/timeline", arktypeValidator("query", timelineQuery), async (c) => {
     const user = c.get("user");
     const query = c.req.valid("query");
@@ -253,9 +271,8 @@ export const memosRoutes = new Hono<{ Bindings: Env }>()
     const hasNextPage = data.length > limit;
     const items = hasNextPage ? data.slice(0, limit) : data;
 
-    const db = c.get("db");
-    const encryptionKey = c.env.SETTINGS_ENCRYPTION_KEY;
-    const storageConfig = await getStorageConfig(db, encryptionKey);
+    const env = c.get("env");
+    const storageConfig = getStorageConfig(env);
     const itemsWithExternalLinks = items.map((item) =>
       processMemoResources(item, storageConfig),
     );
@@ -369,9 +386,8 @@ export const memosRoutes = new Hono<{ Bindings: Env }>()
       with: memoWith,
     });
 
-    const db = c.get("db");
-    const encryptionKey = c.env.SETTINGS_ENCRYPTION_KEY;
-    const storageConfig = await getStorageConfig(db, encryptionKey);
+    const env = c.get("env");
+    const storageConfig = getStorageConfig(env);
     const resultWithExternalLinks = result
       ? processMemoResources(result, storageConfig)
       : result;
@@ -459,9 +475,8 @@ export const memosRoutes = new Hono<{ Bindings: Env }>()
       with: memoWith,
     });
 
-    const db = c.get("db");
-    const encryptionKey = c.env.SETTINGS_ENCRYPTION_KEY;
-    const storageConfig = await getStorageConfig(db, encryptionKey);
+    const env = c.get("env");
+    const storageConfig = getStorageConfig(env);
     const resultWithExternalLinks = result.map((item) =>
       processMemoResources(item, storageConfig),
     );
@@ -502,7 +517,8 @@ export const memosRoutes = new Hono<{ Bindings: Env }>()
     }
 
     const env = c.get("env");
-    const memoWithExternalLinks = processMemoResources(memo, env);
+    const storageConfig = getStorageConfig(env);
+    const memoWithExternalLinks = processMemoResources(memo, storageConfig);
 
     return c.json(success({ data: memoWithExternalLinks, traceId }), 200);
   })

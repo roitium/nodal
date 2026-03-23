@@ -1,10 +1,8 @@
 import type { MiddlewareHandler } from "hono";
-import type { Env } from "@/types/env";
 import { parseCloudflareEnv } from "@/utils/env";
+import type { HonoBindings } from "@/types/hono";
 
-export const envMiddleware: MiddlewareHandler<{
-  Bindings: Env;
-}> = async (c, next) => {
+export const envMiddleware: MiddlewareHandler<HonoBindings> = async (c, next) => {
   c.set("env", parseCloudflareEnv(c.env));
   await next();
 };

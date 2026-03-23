@@ -252,34 +252,6 @@
       "users": "Users",
       "backToApp": "Back to app"
     },
-    "settings": {
-      "title": "System Settings",
-      "description": "Manage system configuration",
-      "groups": {
-        "system": "System",
-        "systemDesc": "Basic system configuration",
-        "supabase": "Supabase Storage",
-        "supabaseDesc": "Supabase object storage configuration",
-        "s3": "S3/R2 Storage",
-        "s3Desc": "S3 compatible storage configuration"
-      },
-      "actions": {
-        "edit": "Edit",
-        "save": "Save",
-        "cancel": "Cancel",
-        "close": "Close"
-      },
-      "validation": {
-        "invalidDomain": "Invalid domain format",
-        "invalidUrl": "Invalid URL format",
-        "invalidProvider": "Invalid storage provider",
-        "required": "This field is required"
-      },
-      "messages": {
-        "updateSuccess": "Settings updated",
-        "updateError": "Failed to update settings"
-      }
-    },
     "users": {
       "title": "User Management",
       "search": "Search users",

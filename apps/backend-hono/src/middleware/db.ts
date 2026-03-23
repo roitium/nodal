@@ -1,10 +1,8 @@
 import type { MiddlewareHandler } from "hono";
 import { getDb } from "@/db/db";
-import type { Env } from "@/types/env";
+import type { HonoBindings } from "@/types/hono";
 
-export const dbMiddleware: MiddlewareHandler<{
-  Bindings: Env;
-}> = async (c, next) => {
+export const dbMiddleware: MiddlewareHandler<HonoBindings> = async (c, next) => {
   const env = c.get("env");
   const databaseUrl = env.DATABASE_URL;
 

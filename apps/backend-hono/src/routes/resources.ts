@@ -5,9 +5,29 @@ import { Hono } from "hono";
 import { v7 as uuidv7 } from "uuid";
 import { resources } from "@/db/schema";
 import { createStorageService } from "@/services/storage";
+import type { HonoBindings } from "@/types/hono";
+import type { StorageConfig } from "@/types/storage-config";
 import type { Env } from "@/types/env";
 import { GeneralCode, ResourceCode } from "@/utils/code";
 import { fail, success } from "@/utils/response";
+
+function getStorageConfig(env: Env): StorageConfig {
+  const provider = env.STORAGE_PROVIDER || "supabase";
+  if (provider !== "supabase" && provider !== "s3" && provider !== "r2") {
+    throw new Error(`Invalid storage provider: ${provider}`);
+  }
+  return {
+    STORAGE_PROVIDER: provider,
+    STORAGE_BUCKET: env.STORAGE_BUCKET || "",
+    SUPABASE_URL: env.SUPABASE_URL,
+    SUPABASE_SERVICE_ROLE_KEY: env.SUPABASE_SERVICE_ROLE_KEY,
+    S3_ENDPOINT: env.S3_ENDPOINT,
+    S3_PUBLIC_URL: env.S3_PUBLIC_URL,
+    S3_REGION: env.S3_REGION,
+    S3_ACCESS_KEY_ID: env.S3_ACCESS_KEY_ID,
+    S3_SECRET_ACCESS_KEY: env.S3_SECRET_ACCESS_KEY,
+  };
+}
 
 const uploadUrlQuery = type({
   fileType: "string >= 1",
@@ -24,9 +44,9 @@ const recordUploadBody = type({
 
 function addExternalLink<T extends { path: string; provider: string }>(
   resource: T,
-  env: Env,
+  config: StorageConfig,
 ): T & { externalLink: string } {
-  const storageService = createStorageService(env);
+  const storageService = createStorageService(config);
   return {
     ...resource,
     externalLink: storageService.getPublicUrl(resource.path),
@@ -35,12 +55,12 @@ function addExternalLink<T extends { path: string; provider: string }>(
 
 function addExternalLinkToArray<T extends { path: string; provider: string }>(
   resources: T[],
-  env: Env,
+  config: StorageConfig,
 ): Array<T & { externalLink: string }> {
-  return resources.map((r) => addExternalLink(r, env));
+  return resources.map((r) => addExternalLink(r, config));
 }
 
-export const resourcesRoutes = new Hono<{ Bindings: Env }>()
+export const resourcesRoutes = new Hono<HonoBindings>()
   .get("/upload-url", arktypeValidator("query", uploadUrlQuery), async (c) => {
     const user = c.get("user");
     const traceId = c.get("traceId");
@@ -90,7 +110,8 @@ export const resourcesRoutes = new Hono<{ Bindings: Env }>()
     };
 
     const token = await jwt.sign(payload);
-    const storageService = createStorageService(env, c.env);
+    const storageConfig = getStorageConfig(env);
+    const storageService = createStorageService(storageConfig);
     const result = await storageService.getUploadUrl(path, fileType);
 
     return c.json(
@@ -159,7 +180,8 @@ export const resourcesRoutes = new Hono<{ Bindings: Env }>()
         );
       }
 
-      const storageService = createStorageService(env, c.env);
+      const storageConfig = getStorageConfig(env);
+      const storageService = createStorageService(storageConfig);
 
       const objectMeta = await storageService.headFile(path);
       if (!objectMeta) {
@@ -227,7 +249,7 @@ export const resourcesRoutes = new Hono<{ Bindings: Env }>()
         );
       }
 
-      const resultWithExternalLink = addExternalLink(result, env);
+      const resultWithExternalLink = addExternalLink(result, storageConfig);
       return c.json(success({ data: resultWithExternalLink, traceId }), 200);
     },
   )
@@ -253,7 +275,8 @@ export const resourcesRoutes = new Hono<{ Bindings: Env }>()
       orderBy: [desc(resources.createdAt)],
     });
 
-    const resultWithExternalLinks = addExternalLinkToArray(result, env);
+    const storageConfig = getStorageConfig(env);
+    const resultWithExternalLinks = addExternalLinkToArray(result, storageConfig);
     return c.json(success({ data: resultWithExternalLinks, traceId }), 200);
   })
   .get("/:id", async (c) => {
@@ -289,6 +312,7 @@ export const resourcesRoutes = new Hono<{ Bindings: Env }>()
       );
     }
 
-    const resultWithExternalLink = addExternalLink(result, env);
+    const storageConfig = getStorageConfig(env);
+    const resultWithExternalLink = addExternalLink(result, storageConfig);
     return c.json(success({ data: resultWithExternalLink, traceId }), 200);
   });

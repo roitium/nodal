@@ -1,13 +1,11 @@
 import type { MiddlewareHandler } from "hono";
 import { eq } from "drizzle-orm";
 import { users } from "@/db/schema";
-import type { Env } from "@/types/env";
+import type { HonoBindings } from "@/types/hono";
 import { AdminCode, GeneralCode } from "@/utils/code";
 import { fail } from "@/utils/response";
 
-export const adminMiddleware: MiddlewareHandler<{
-  Bindings: Env;
-}> = async (c, next) => {
+export const adminMiddleware: MiddlewareHandler<HonoBindings> = async (c, next) => {
   const user = c.get("user");
   const db = c.get("db");
   const traceId = c.get("traceId");

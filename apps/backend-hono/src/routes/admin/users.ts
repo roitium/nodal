@@ -4,7 +4,7 @@ import { type } from "arktype";
 import { arktypeValidator } from "@hono/arktype-validator";
 import { users } from "@/db/schema";
 import { adminMiddleware } from "@/middleware/admin";
-import type { Env } from "@/types/env";
+import type { HonoBindings } from "@/types/hono";
 import { AdminCode } from "@/utils/code";
 import { fail, success } from "@/utils/response";
 
@@ -17,7 +17,7 @@ const patchUserBody = type({
   "coverImageUrl?": "string",
 });
 
-export const adminUsersRoutes = new Hono<{ Bindings: Env }>()
+export const adminUsersRoutes = new Hono<HonoBindings>()
   .use(adminMiddleware)
   .get("/", async (c) => {
     const db = c.get("db");

@@ -1,20 +1,19 @@
-import { type } from "arktype";
-
 export type Env = {
-  DATABASE_URL?: string;
-  JWT_SECRET?: string;
-  SETTINGS_ENCRYPTION_KEY?: string;
+  DATABASE_URL: string;
+  JWT_SECRET: string;
+  ROOT_DOMAIN?: string;
+  SUPABASE_URL?: string;
+  SUPABASE_SERVICE_ROLE_KEY?: string;
+  STORAGE_BUCKET?: string;
+  STORAGE_PROVIDER?: string;
+  S3_PUBLIC_URL?: string;
+  S3_ENDPOINT?: string;
+  S3_ACCESS_KEY_ID?: string;
+  S3_SECRET_ACCESS_KEY?: string;
+  S3_REGION?: string;
 };
 
-const CloudflareEnvSchema = type({
-  DATABASE_URL: "string",
-  JWT_SECRET: "string",
-});
-
-// 从 schema 推导最终的类型
-export type ResolvedCloudflareEnv = typeof CloudflareEnvSchema.infer;
-
-export { CloudflareEnvSchema };
+export type ResolvedCloudflareEnv = Env;
 
 export type SessionUser = {
   id: string;

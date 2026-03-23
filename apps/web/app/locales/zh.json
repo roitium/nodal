@@ -252,34 +252,6 @@
       "users": "用户管理",
       "backToApp": "返回应用"
     },
-    "settings": {
-      "title": "系统设置",
-      "description": "管理系统配置项",
-      "groups": {
-        "system": "系统",
-        "systemDesc": "基础系统配置",
-        "supabase": "Supabase 存储",
-        "supabaseDesc": "Supabase 对象存储配置",
-        "s3": "S3/R2 存储",
-        "s3Desc": "S3 兼容存储配置"
-      },
-      "actions": {
-        "edit": "编辑",
-        "save": "保存",
-        "cancel": "取消",
-        "close": "关闭"
-      },
-      "validation": {
-        "invalidDomain": "无效的域名格式",
-        "invalidUrl": "无效的 URL 格式",
-        "invalidProvider": "无效的存储提供商",
-        "required": "此项不能为空"
-      },
-      "messages": {
-        "updateSuccess": "设置已更新",
-        "updateError": "更新失败"
-      }
-    },
     "users": {
       "title": "用户管理",
       "search": "搜索用户",
