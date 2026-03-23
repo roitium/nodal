@@ -143,11 +143,11 @@ export default function AdminUsersRoute() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
-      toast.success(t("admin.userUpdated", "User updated successfully"));
+      toast.success(t("admin.users.messages.updated"));
       setEditingUser(null);
     },
     onError: (error: Error) => {
-      toast.error(error.message || t("admin.updateFailed", "Failed to update user"));
+      toast.error(error.message || t("admin.users.messages.updateFailed"));
     },
   });
 
@@ -163,11 +163,11 @@ export default function AdminUsersRoute() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
-      toast.success(t("admin.userDeleted", "User deleted successfully"));
+      toast.success(t("admin.users.messages.deleted"));
       setDeletingUser(null);
     },
     onError: (error: Error) => {
-      toast.error(error.message || t("admin.deleteFailed", "Failed to delete user"));
+      toast.error(error.message || t("admin.users.messages.deleteFailed"));
     },
   });
 
@@ -187,13 +187,13 @@ export default function AdminUsersRoute() {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
       toast.success(
         banningUser?.banned
-          ? t("admin.userEnabled", "User enabled successfully")
-          : t("admin.userBanned", "User banned successfully")
+          ? t("admin.users.messages.enabled")
+          : t("admin.users.messages.banned")
       );
       setBanningUser(null);
     },
     onError: (error: Error) => {
-      toast.error(error.message || t("admin.banFailed", "Failed to update user status"));
+      toast.error(error.message || t("admin.users.messages.banFailed"));
     },
   });
 
@@ -233,15 +233,15 @@ export default function AdminUsersRoute() {
     <div className="stagger-fade space-y-6 pb-20">
       <div className="mb-4 md:mb-6">
         <h1 className="app-heading text-2xl font-semibold">
-          {t("admin.users", "Users")}
+          {t("admin.users.title")}
         </h1>
       </div>
 
       <Card className="surface-card rounded-2xl border-border/70 shadow-sm">
         <CardHeader>
-          <CardTitle>{t("admin.manageUsers", "Manage Users")}</CardTitle>
+          <CardTitle>{t("admin.users.title")}</CardTitle>
           <CardDescription>
-            {t("admin.manageUsersDesc", "View, edit, and manage user accounts.")}
+            {t("admin.users.description")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -250,7 +250,7 @@ export default function AdminUsersRoute() {
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 type="search"
-                placeholder={t("admin.searchUsers", "Search users...")}
+                placeholder={t("admin.users.searchPlaceholder")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-9"
@@ -259,7 +259,7 @@ export default function AdminUsersRoute() {
             </div>
             <div className="flex items-center gap-2">
               <Label htmlFor="admin-filter" className="text-sm">
-                {t("admin.adminOnly", "Admin only")}
+                {t("admin.users.filter.adminOnly")}
               </Label>
               <Switch
                 id="admin-filter"
@@ -273,19 +273,19 @@ export default function AdminUsersRoute() {
           </div>
 
           <div className="rounded-lg border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t("admin.username", "Username")}</TableHead>
-                  <TableHead>{t("admin.email", "Email")}</TableHead>
-                  <TableHead>{t("admin.role", "Role")}</TableHead>
-                  <TableHead>{t("admin.status", "Status")}</TableHead>
-                  <TableHead>{t("admin.createdAt", "Created")}</TableHead>
-                  <TableHead className="text-right">
-                    {t("admin.actions", "Actions")}
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t("admin.users.columns.username")}</TableHead>
+                <TableHead>{t("admin.users.columns.email")}</TableHead>
+                <TableHead>{t("admin.users.columns.role")}</TableHead>
+                <TableHead>{t("admin.users.columns.status")}</TableHead>
+                <TableHead>{t("admin.users.columns.createdAt")}</TableHead>
+                <TableHead className="text-right">
+                  {t("admin.users.columns.actions")}
+                </TableHead>
+              </TableRow>
+            </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
@@ -293,7 +293,7 @@ export default function AdminUsersRoute() {
                       <div className="flex items-center justify-center gap-2">
                         <Loader2 className="h-4 w-4 animate-spin" />
                         <span className="text-muted-foreground">
-                          {t("admin.loading", "Loading...")}
+                          {t("admin.users.messages.loading")}
                         </span>
                       </div>
                     </TableCell>
@@ -302,7 +302,7 @@ export default function AdminUsersRoute() {
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-8">
                       <span className="text-muted-foreground">
-                        {t("admin.noUsers", "No users found.")}
+                        {t("admin.users.messages.noUsers")}
                       </span>
                     </TableCell>
                   </TableRow>
@@ -317,11 +317,11 @@ export default function AdminUsersRoute() {
                         {user.isAdmin ? (
                           <Badge variant="default" className="gap-1">
                             <Shield className="h-3 w-3" />
-                            {t("admin.admin", "Admin")}
+                            {t("admin.users.role.admin")}
                           </Badge>
                         ) : (
                           <Badge variant="secondary">
-                            {t("admin.user", "User")}
+                            {t("admin.users.role.user")}
                           </Badge>
                         )}
                       </TableCell>
@@ -329,11 +329,11 @@ export default function AdminUsersRoute() {
                         {user.banned ? (
                           <Badge variant="destructive" className="gap-1">
                             <UserX className="h-3 w-3" />
-                            {t("admin.banned", "Banned")}
+                            {t("admin.users.status.banned")}
                           </Badge>
                         ) : (
                           <Badge variant="outline" className="text-green-600 dark:text-green-400">
-                            {t("admin.active", "Active")}
+                            {t("admin.users.status.active")}
                           </Badge>
                         )}
                       </TableCell>
@@ -347,7 +347,7 @@ export default function AdminUsersRoute() {
                             size="icon-xs"
                             onClick={() => setEditingUser(user)}
                             disabled={isSelfAction(user.id)}
-                            title={t("admin.edit", "Edit")}
+                            title={t("admin.users.actions.edit")}
                             data-testid="edit-button"
                           >
                             <Edit2 className="h-4 w-4" />
@@ -357,7 +357,7 @@ export default function AdminUsersRoute() {
                             size="icon-xs"
                             onClick={() => setBanningUser(user)}
                             disabled={isSelfAction(user.id)}
-                            title={user.banned ? t("admin.enable", "Enable") : t("admin.ban", "Ban")}
+                            title={user.banned ? t("admin.users.actions.enable") : t("admin.users.actions.ban")}
                             data-testid="ban-button"
                           >
                             <UserX className="h-4 w-4" />
@@ -367,7 +367,7 @@ export default function AdminUsersRoute() {
                             size="icon-xs"
                             onClick={() => setDeletingUser(user)}
                             disabled={isSelfAction(user.id)}
-                            title={t("admin.delete", "Delete")}
+                            title={t("admin.users.actions.delete")}
                             className="text-destructive hover:text-destructive"
                             data-testid="delete-button"
                           >
@@ -393,7 +393,7 @@ export default function AdminUsersRoute() {
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <span className="text-sm text-muted-foreground">
-                {t("admin.pageOf", "Page {{page}} of {{total}}", {
+                {t("admin.users.messages.pageOf", {
                   page: pagination.page,
                   total: pagination.totalPages,
                 })}
@@ -414,19 +414,19 @@ export default function AdminUsersRoute() {
       <Dialog open={!!editingUser} onOpenChange={(open) => !open && setEditingUser(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{t("admin.editUser", "Edit User")}</DialogTitle>
+            <DialogTitle>{t("admin.users.dialogs.editTitle")}</DialogTitle>
             <DialogDescription>
-              {t("admin.editUserDesc", "Update user information and permissions.")}
+              {t("admin.users.dialogs.editDescription")}
             </DialogDescription>
           </DialogHeader>
           {editingUser && (
             <form onSubmit={handleEditSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-username">{t("admin.username", "Username")}</Label>
+                <Label htmlFor="edit-username">{t("admin.users.columns.username")}</Label>
                 <Input id="edit-username" value={editingUser.username} disabled />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-email">{t("admin.email", "Email")}</Label>
+                <Label htmlFor="edit-email">{t("admin.users.columns.email")}</Label>
                 <Input id="edit-email" value={editingUser.email} disabled />
               </div>
               <div className="flex items-center gap-2">
@@ -436,29 +436,29 @@ export default function AdminUsersRoute() {
                   defaultChecked={editingUser.isAdmin}
                   disabled={isSelfAction(editingUser.id)}
                 />
-                <Label htmlFor="edit-isAdmin">{t("admin.isAdmin", "Is Admin")}</Label>
+                <Label htmlFor="edit-isAdmin">{t("admin.users.form.isAdmin")}</Label>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-displayName">{t("admin.displayName", "Display Name")}</Label>
+                <Label htmlFor="edit-displayName">{t("admin.users.form.displayName")}</Label>
                 <Input
                   id="edit-displayName"
                   name="displayName"
                   defaultValue={editingUser.displayName ?? ""}
-                  placeholder={t("admin.displayNamePlaceholder", "Display name")}
+                  placeholder={t("admin.users.form.displayNamePlaceholder")}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-bio">{t("admin.bio", "Bio")}</Label>
+                <Label htmlFor="edit-bio">{t("admin.users.form.bio")}</Label>
                 <Textarea
                   id="edit-bio"
                   name="bio"
                   defaultValue={editingUser.bio ?? ""}
-                  placeholder={t("admin.bioPlaceholder", "User bio")}
+                  placeholder={t("admin.users.form.bioPlaceholder")}
                   rows={3}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-avatarUrl">{t("admin.avatarUrl", "Avatar URL")}</Label>
+                <Label htmlFor="edit-avatarUrl">{t("admin.users.form.avatarUrl")}</Label>
                 <Input
                   id="edit-avatarUrl"
                   name="avatarUrl"
@@ -467,7 +467,7 @@ export default function AdminUsersRoute() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-coverImageUrl">{t("admin.coverImageUrl", "Cover Image URL")}</Label>
+                <Label htmlFor="edit-coverImageUrl">{t("admin.users.form.coverImageUrl")}</Label>
                 <Input
                   id="edit-coverImageUrl"
                   name="coverImageUrl"
@@ -482,7 +482,7 @@ export default function AdminUsersRoute() {
                   defaultChecked={editingUser.banned}
                   disabled={isSelfAction(editingUser.id)}
                 />
-                <Label htmlFor="edit-banned">{t("admin.banned", "Banned")}</Label>
+                <Label htmlFor="edit-banned">{t("admin.users.status.banned")}</Label>
               </div>
               <DialogFooter>
                 <Button
@@ -490,16 +490,16 @@ export default function AdminUsersRoute() {
                   variant="outline"
                   onClick={() => setEditingUser(null)}
                 >
-                  {t("admin.cancel", "Cancel")}
+                  {t("admin.settings.actions.cancel")}
                 </Button>
                 <Button type="submit" disabled={updateMutation.isPending}>
                   {updateMutation.isPending ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      {t("admin.saving", "Saving...")}
+                      {t("admin.settings.actions.saving")}
                     </>
                   ) : (
-                    t("admin.save", "Save")
+                    t("admin.settings.actions.save")
                   )}
                 </Button>
               </DialogFooter>
@@ -513,22 +513,18 @@ export default function AdminUsersRoute() {
           <DialogHeader>
             <DialogTitle>
               {banningUser?.banned
-                ? t("admin.enableUser", "Enable User")
-                : t("admin.banUser", "Ban User")}
+                ? t("admin.users.dialogs.enableTitle")
+                : t("admin.users.dialogs.banTitle")}
             </DialogTitle>
             <DialogDescription>
               {banningUser?.banned
-                ? t("admin.enableConfirm", "Are you sure you want to enable {{username}}?", {
-                    username: banningUser?.username,
-                  })
-                : t("admin.banConfirm", "Are you sure you want to ban {{username}}? They will not be able to access their account.", {
-                    username: banningUser?.username,
-                  })}
+                ? t("admin.users.dialogs.enableConfirm", { username: banningUser?.username })
+                : t("admin.users.dialogs.banConfirm", { username: banningUser?.username })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setBanningUser(null)}>
-              {t("admin.cancel", "Cancel")}
+              {t("admin.settings.actions.cancel")}
             </Button>
             <Button
               variant={banningUser?.banned ? "default" : "destructive"}
@@ -538,12 +534,12 @@ export default function AdminUsersRoute() {
               {banMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {t("admin.processing", "Processing...")}
+                  {t("admin.users.messages.processing")}
                 </>
               ) : banningUser?.banned ? (
-                t("admin.enable", "Enable")
+                t("admin.users.actions.enable")
               ) : (
-                t("admin.ban", "Ban")
+                t("admin.users.actions.ban")
               )}
             </Button>
           </DialogFooter>
@@ -554,19 +550,15 @@ export default function AdminUsersRoute() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="text-destructive">
-              {t("admin.deleteUser", "Delete User")}
+              {t("admin.users.dialogs.deleteTitle")}
             </DialogTitle>
             <DialogDescription>
-              {t(
-                "admin.deleteConfirm",
-                "Are you sure you want to delete {{username}}? This action cannot be undone. All their memos and resources will be permanently deleted.",
-                { username: deletingUser?.username }
-              )}
+              {t("admin.users.dialogs.deleteConfirm", { username: deletingUser?.username })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeletingUser(null)}>
-              {t("admin.cancel", "Cancel")}
+              {t("admin.settings.actions.cancel")}
             </Button>
             <Button
               variant="destructive"
@@ -576,10 +568,10 @@ export default function AdminUsersRoute() {
               {deleteMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {t("admin.deleting", "Deleting...")}
+                  {t("admin.users.messages.deleting")}
                 </>
               ) : (
-                t("admin.delete", "Delete")
+                t("admin.users.actions.delete")
               )}
             </Button>
           </DialogFooter>

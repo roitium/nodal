@@ -70,7 +70,7 @@ export function AdminSidebar() {
             className="h-8 w-8 rounded-md object-cover"
           />
           <span className="app-heading text-lg font-semibold tracking-tight">
-            Admin
+            {t("admin.title")}
           </span>
         </div>
       </SidebarHeader>
@@ -82,7 +82,7 @@ export function AdminSidebar() {
                 <SidebarMenuButton asChild isActive={isActive("/admin")}>
                   <Link to="/admin" onClick={closeMobileSidebar}>
                     <LayoutDashboard className="h-4 w-4" />
-                    <span>{t("admin.dashboard", "Dashboard")}</span>
+                    <span>{t("admin.sidebar.dashboard")}</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -90,7 +90,7 @@ export function AdminSidebar() {
                 <SidebarMenuButton asChild isActive={isActive("/admin/settings")}>
                   <Link to="/admin/settings" onClick={closeMobileSidebar}>
                     <Settings className="h-4 w-4" />
-                    <span>{t("admin.settings", "Settings")}</span>
+                    <span>{t("admin.sidebar.settings")}</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -98,7 +98,7 @@ export function AdminSidebar() {
                 <SidebarMenuButton asChild isActive={isActive("/admin/users")}>
                   <Link to="/admin/users" onClick={closeMobileSidebar}>
                     <Users className="h-4 w-4" />
-                    <span>{t("admin.users", "Users")}</span>
+                    <span>{t("admin.sidebar.users")}</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -130,7 +130,7 @@ export function AdminSidebar() {
             <DropdownMenuContent align="start" className="w-56">
               <DropdownMenuItem onClick={handleBackToApp}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                {t("admin.backToApp", "Back to App")}
+                {t("admin.sidebar.backToApp")}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem

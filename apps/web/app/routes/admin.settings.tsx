@@ -34,23 +34,23 @@ interface Setting {
   updated_by: string | null;
 }
 
-const settingGroups = {
+const getSettingGroups = (t: (key: string) => string) => ({
   system: {
-    title: "System",
-    description: "Core application settings",
+    title: t("admin.settings.groups.system"),
+    description: t("admin.settings.groups.systemDesc"),
     keys: ["ROOT_DOMAIN"],
   },
   supabase: {
-    title: "Storage (Supabase)",
-    description: "Supabase storage configuration",
+    title: t("admin.settings.groups.supabase"),
+    description: t("admin.settings.groups.supabaseDesc"),
     keys: ["STORAGE_PROVIDER", "SUPABASE_URL", "STORAGE_BUCKET", "SUPABASE_SERVICE_ROLE_KEY"],
   },
   s3: {
-    title: "Storage (S3/R2)",
-    description: "S3 or Cloudflare R2 storage configuration",
+    title: t("admin.settings.groups.s3"),
+    description: t("admin.settings.groups.s3Desc"),
     keys: ["S3_ENDPOINT", "S3_PUBLIC_URL", "S3_REGION", "S3_ACCESS_KEY_ID", "S3_SECRET_ACCESS_KEY"],
   },
-};
+});
 
 const immutableKeys = new Set(["DATABASE_URL", "JWT_SECRET"]);
 
@@ -132,18 +132,18 @@ export default function AdminSettings() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-settings"] });
-      toast.success(t("admin.settingsUpdated", "Settings updated successfully"));
+      toast.success(t("admin.settings.messages.updated"));
       setIsDialogOpen(false);
       setEditingSetting(null);
     },
     onError: (error: Error) => {
-      toast.error(error.message || t("admin.updateFailed", "Failed to update setting"));
+      toast.error(error.message || t("admin.settings.messages.updateFailed"));
     },
   });
 
   const handleEdit = (setting: Setting) => {
     if (immutableKeys.has(setting.key)) {
-      toast.error(t("admin.cannotEdit", "This setting cannot be edited"));
+      toast.error(t("admin.settings.messages.cannotEdit"));
       return;
     }
     setEditingSetting(setting);
@@ -175,14 +175,16 @@ export default function AdminSettings() {
     setValidationError(null);
   };
 
-  const getSettingsByGroup = (groupKey: keyof typeof settingGroups) => {
+  const settingGroups = getSettingGroups(t);
+
+  const getSettingsByGroup = (groupKey: keyof ReturnType<typeof getSettingGroups>) => {
     if (!settings) return [];
     const groupKeys = settingGroups[groupKey].keys;
     return settings.filter((s) => groupKeys.includes(s.key));
   };
 
   const formatDate = (dateString: string | null) => {
-    if (!dateString) return t("admin.never", "Never");
+    if (!dateString) return t("admin.settings.messages.never");
     return new Date(dateString).toLocaleString();
   };
 
@@ -197,13 +199,13 @@ export default function AdminSettings() {
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center py-12">
-        <p className="text-destructive">{t("admin.loadError", "Failed to load settings")}</p>
+        <p className="text-destructive">{t("admin.settings.messages.loadError")}</p>
         <Button
           variant="outline"
           className="mt-4"
           onClick={() => queryClient.invalidateQueries({ queryKey: ["admin-settings"] })}
         >
-          {t("admin.retry", "Retry")}
+          {t("admin.settings.actions.retry")}
         </Button>
       </div>
     );
@@ -213,22 +215,22 @@ export default function AdminSettings() {
     <div className="stagger-fade space-y-6 pb-20">
       <div className="mb-4 md:mb-6">
         <h1 className="app-heading text-2xl font-semibold">
-          {t("admin.settings", "Settings")}
+          {t("admin.settings.title")}
         </h1>
         <p className="text-muted-foreground mt-1">
-          {t("admin.settingsDesc", "Manage application configuration")}
+          {t("admin.settings.description")}
         </p>
       </div>
 
-      {(Object.keys(settingGroups) as Array<keyof typeof settingGroups>).map((groupKey) => {
+      {(Object.keys(settingGroups) as Array<keyof ReturnType<typeof getSettingGroups>>).map((groupKey) => {
         const group = settingGroups[groupKey];
         const groupSettings = getSettingsByGroup(groupKey);
 
         return (
           <Card key={groupKey} className="surface-card rounded-2xl border-border/70 shadow-sm">
             <CardHeader>
-              <CardTitle>{t(`admin.group${groupKey}`, group.title)}</CardTitle>
-              <CardDescription>{t(`admin.group${groupKey}Desc`, group.description)}</CardDescription>
+              <CardTitle>{group.title}</CardTitle>
+              <CardDescription>{group.description}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -242,18 +244,18 @@ export default function AdminSettings() {
                         <Label className="text-sm font-medium">{setting.key}</Label>
                         {setting.is_secret && (
                           <span className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
-                            {t("admin.secret", "Secret")}
+                            {t("admin.settings.messages.secret")}
                           </span>
                         )}
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        {setting.value || t("admin.notSet", "Not set")}
+                        {setting.value || t("admin.settings.messages.notSet")}
                       </p>
                       {setting.description && (
                         <p className="text-xs text-muted-foreground/70">{setting.description}</p>
                       )}
                       <p className="text-xs text-muted-foreground/50">
-                        {t("admin.lastUpdated", "Last updated")}: {formatDate(setting.updated_at)}
+                        {t("admin.settings.messages.lastUpdated")}: {formatDate(setting.updated_at)}
                       </p>
                     </div>
                     <Button
@@ -264,7 +266,7 @@ export default function AdminSettings() {
                       data-testid={`edit-${setting.key}`}
                     >
                       <Pencil className="mr-1 h-3 w-3" />
-                      {t("admin.edit", "Edit")}
+                      {t("admin.settings.actions.edit")}
                     </Button>
                   </div>
                 ))}
@@ -278,21 +280,21 @@ export default function AdminSettings() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {t("admin.editSetting", "Edit Setting")}: {editingSetting?.key}
+              {t("admin.settings.messages.editSetting")}: {editingSetting?.key}
             </DialogTitle>
             <DialogDescription>
               {editingSetting?.is_secret
-                ? t("admin.secretWarning", "This is a secret value. Enter a new value to update it.")
-                : t("admin.enterValue", "Enter a new value for this setting.")}
+                ? t("admin.settings.messages.secretWarning")
+                : t("admin.settings.messages.enterValue")}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="value">{t("admin.value", "Value")}</Label>
+              <Label htmlFor="value">{t("admin.settings.messages.value")}</Label>
               <Input
                 id="value"
                 type={editingSetting?.is_secret ? "password" : "text"}
-                placeholder={t("admin.enterNewValue", "Enter new value")}
+                placeholder={t("admin.settings.messages.enterNewValue")}
                 value={inputValue}
                 onChange={(e) => {
                   setInputValue(e.target.value);
@@ -302,7 +304,7 @@ export default function AdminSettings() {
               />
               {editingSetting?.key === "STORAGE_PROVIDER" && (
                 <p className="text-xs text-muted-foreground">
-                  {t("admin.storageProviderHint", "Must be one of: supabase, s3, r2")}
+                  {t("admin.settings.messages.storageProviderHint")}
                 </p>
               )}
               {validationError && (
@@ -315,12 +317,12 @@ export default function AdminSettings() {
                 variant="outline"
                 onClick={handleCloseDialog}
               >
-                {t("admin.cancel", "Cancel")}
+                {t("admin.settings.actions.cancel")}
               </Button>
               <Button type="submit" disabled={updateMutation.isPending} data-testid="save-button">
                 {updateMutation.isPending
-                  ? t("admin.saving", "Saving...")
-                  : t("admin.save", "Save")}
+                  ? t("admin.settings.actions.saving")
+                  : t("admin.settings.actions.save")}
               </Button>
             </DialogFooter>
           </form>

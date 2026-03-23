@@ -1,11 +1,13 @@
 import { Outlet, useNavigate } from "react-router";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { AdminSidebar } from "~/components/admin-sidebar";
 import { SidebarProvider, SidebarTrigger } from "~/components/ui/sidebar";
 import { useQuery } from "@tanstack/react-query";
 import { client } from "~/lib/rpc";
 
 export default function AdminLayout() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
@@ -58,7 +60,7 @@ export default function AdminLayout() {
       <div className="flex h-screen items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-          <span className="text-sm text-muted-foreground">Loading...</span>
+          <span className="text-sm text-muted-foreground">{t("admin.loading")}</span>
         </div>
       </div>
     );
