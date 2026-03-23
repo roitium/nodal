@@ -1,6 +1,6 @@
 import type { Env, ResolvedCloudflareEnv } from "@/types/env";
 import type { IStorageProvider } from "@/services/storage/interface";
-import { R2StorageProvider } from "@/services/storage/providers/r2";
+import { S3StorageProvider } from "@/services/storage/providers/s3";
 import { SupabaseStorageProvider } from "@/services/storage/providers/supabase";
 
 export function createStorageService(
@@ -8,8 +8,9 @@ export function createStorageService(
   bindings?: Partial<Env>,
 ): IStorageProvider {
   switch (env.STORAGE_PROVIDER) {
+    case "s3":
     case "r2": {
-      return new R2StorageProvider(env);
+      return new S3StorageProvider(env);
     }
     case "supabase":
     default:

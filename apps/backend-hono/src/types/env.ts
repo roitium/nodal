@@ -4,12 +4,13 @@ import { type } from "arktype";
 export type Env = {
   DATABASE_URL?: string;
   JWT_SECRET?: string;
+  SETTINGS_ENCRYPTION_KEY?: string;
   ROOT_DOMAIN?: string;
   SUPABASE_URL?: string;
   SUPABASE_SERVICE_ROLE_KEY?: string;
   STORAGE_BUCKET?: string;
   STORAGE_PROVIDER?: string;
-  R2_PUBLIC_BASE_URL?: string;
+  S3_PUBLIC_URL?: string;
   S3_ENDPOINT?: string;
   S3_ACCESS_KEY_ID?: string;
   S3_SECRET_ACCESS_KEY?: string;
@@ -25,7 +26,7 @@ const CloudflareEnvSchema = type({
   SUPABASE_SERVICE_ROLE_KEY: "string | undefined",
   STORAGE_BUCKET: "string | undefined",
   STORAGE_PROVIDER: "string | undefined",
-  R2_PUBLIC_BASE_URL: "string | undefined",
+  S3_PUBLIC_URL: "string | undefined",
   S3_ENDPOINT: "string | undefined",
   S3_ACCESS_KEY_ID: "string | undefined",
   S3_SECRET_ACCESS_KEY: "string | undefined",

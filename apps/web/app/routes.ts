@@ -17,4 +17,9 @@ export default [
     route("settings", "routes/settings.tsx"),
     route("memo/:id", "routes/memo.$id.tsx"),
   ]),
+  layout("routes/admin.layout.tsx", [
+    route("admin", "routes/admin.index.tsx"),
+    route("admin/settings", "routes/admin.settings.tsx"),
+    route("admin/users", "routes/admin.users.tsx"),
+  ]),
 ] satisfies RouteConfig;

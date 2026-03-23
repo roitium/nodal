@@ -6,6 +6,8 @@ import { dbMiddleware } from "@/middleware/db";
 import { envMiddleware } from "@/middleware/env";
 
 import { traceIdMiddleware } from "@/middleware/trace";
+import { adminSettingsRoutes } from "@/routes/admin/settings";
+import { adminUsersRoutes } from "@/routes/admin/users";
 import { authRoutes } from "@/routes/auth";
 import { memosRoutes } from "@/routes/memos";
 import { proxyRoutes } from "@/routes/proxy";
@@ -40,7 +42,9 @@ const route = app
   .route("/api/v1/auth", authRoutes)
   .route("/api/v1/memos", memosRoutes)
   .route("/api/v1/resources", resourcesRoutes)
-  .route("/api/v1/proxy", proxyRoutes);
+  .route("/api/v1/proxy", proxyRoutes)
+  .route("/api/v1/admin/settings", adminSettingsRoutes)
+  .route("/api/v1/admin/users", adminUsersRoutes);
 
 app.onError((error, c) => {
   const traceId = c.get("traceId");

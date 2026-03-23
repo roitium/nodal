@@ -8,9 +8,60 @@ import {
   version as uuidVersion,
 } from "uuid";
 import { memos, resources, users } from "@/db/schema";
+import { createStorageService } from "@/services/storage";
 import type { Env } from "@/types/env";
 import { GeneralCode, MemoCode, UserCode } from "@/utils/code";
 import { fail, success } from "@/utils/response";
+
+interface ResourceWithPath {
+  id: string;
+  path: string;
+  type: string;
+  size: number;
+  memoId: string | null;
+  filename: string;
+  createdAt: Date | string | null;
+}
+
+interface MemoWithResources {
+  resources?: ResourceWithPath[];
+  replies?: Array<{
+    resources?: ResourceWithPath[];
+  }>;
+}
+
+function addExternalLinkToResources<T extends ResourceWithPath>(
+  resource: T,
+  env: Env,
+): T & { externalLink: string } {
+  const storageService = createStorageService(env);
+  return {
+    ...resource,
+    externalLink: storageService.getPublicUrl(resource.path),
+  };
+}
+
+function processMemoResources<T extends MemoWithResources>(
+  memo: T,
+  env: Env,
+): T {
+  const processedMemo = { ...memo };
+
+  if (processedMemo.resources) {
+    processedMemo.resources = processedMemo.resources.map((r) =>
+      addExternalLinkToResources(r, env),
+    );
+  }
+
+  if (processedMemo.replies) {
+    processedMemo.replies = processedMemo.replies.map((reply) => ({
+      ...reply,
+      resources: reply.resources?.map((r) => addExternalLinkToResources(r, env)),
+    }));
+  }
+
+  return processedMemo;
+}
 
 const timelineQuery = type({
   "limit?": "string",
@@ -72,7 +123,7 @@ const miniAuthorColumns = {
 
 const resourceColumns = {
   id: true,
-  externalLink: true,
+  path: true,
   type: true,
   size: true,
   memoId: true,
@@ -200,10 +251,15 @@ export const memosRoutes = new Hono<{ Bindings: Env }>()
     const hasNextPage = data.length > limit;
     const items = hasNextPage ? data.slice(0, limit) : data;
 
+    const env = c.get("env");
+    const itemsWithExternalLinks = items.map((item) =>
+      processMemoResources(item, env),
+    );
+
     return c.json(
       success({
         data: {
-          data: items,
+          data: itemsWithExternalLinks,
           nextCursor: hasNextPage
             ? {
                 createdAt: items[items.length - 1]?.createdAt ?? "",
@@ -309,7 +365,12 @@ export const memosRoutes = new Hono<{ Bindings: Env }>()
       with: memoWith,
     });
 
-    return c.json(success({ data: result, traceId }), 200);
+    const env = c.get("env");
+    const resultWithExternalLinks = result
+      ? processMemoResources(result, env)
+      : result;
+
+    return c.json(success({ data: resultWithExternalLinks, traceId }), 200);
   })
   .get("/stats", arktypeValidator("query", statsQuery), async (c) => {
     const user = c.get("user");
@@ -392,7 +453,12 @@ export const memosRoutes = new Hono<{ Bindings: Env }>()
       with: memoWith,
     });
 
-    return c.json(success({ data: result, traceId }), 200);
+    const env = c.get("env");
+    const resultWithExternalLinks = result.map((item) =>
+      processMemoResources(item, env),
+    );
+
+    return c.json(success({ data: resultWithExternalLinks, traceId }), 200);
   })
   .get("/:id", arktypeValidator("param", memoIdParam), async (c) => {
     const user = c.get("user");
@@ -427,7 +493,10 @@ export const memosRoutes = new Hono<{ Bindings: Env }>()
       );
     }
 
-    return c.json(success({ data: memo, traceId }), 200);
+    const env = c.get("env");
+    const memoWithExternalLinks = processMemoResources(memo, env);
+
+    return c.json(success({ data: memoWithExternalLinks, traceId }), 200);
   })
   .delete("/:id", arktypeValidator("param", memoIdParam), async (c) => {
     const user = c.get("user");

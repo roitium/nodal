@@ -1,0 +1,7 @@
+=== Task 7: Users API - GET (List) QA Evidence ===
+
+Test 1: Unauthenticated request (expect 401)
+{"data":null,"error":"请先登录","traceId":"019d1916-78c8-7328-9058-e420262347c3","code":10001,"timestamp":1774242396361}
+
+Test 2: Non-admin request (expect 403)
+{"data":null,"error":"请先登录","traceId":"019d1916-78d2-747b-bf85-d27b0066bca7","code":10001,"timestamp":1774242396371}

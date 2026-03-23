@@ -12,8 +12,8 @@ import type {
   UploadResult,
 } from "@/services/storage/interface";
 
-export class R2StorageProvider implements IStorageProvider {
-  readonly providerName = "r2";
+export class S3StorageProvider implements IStorageProvider {
+  readonly providerName = "s3";
   private client: S3Client;
   private bucket: string;
 
@@ -25,7 +25,7 @@ export class R2StorageProvider implements IStorageProvider {
       !env.STORAGE_BUCKET
     ) {
       throw new Error(
-        "S3_ENDPOINT, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, and STORAGE_BUCKET are required for r2 storage",
+        "S3_ENDPOINT, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, and STORAGE_BUCKET are required for s3 storage",
       );
     }
 
@@ -80,11 +80,11 @@ export class R2StorageProvider implements IStorageProvider {
   }
 
   getPublicUrl(path: string): string {
-    if (!this.env.R2_PUBLIC_BASE_URL) {
-      throw new Error("R2_PUBLIC_BASE_URL is required for r2 storage");
+    if (!this.env.S3_PUBLIC_URL) {
+      throw new Error("S3_PUBLIC_URL is required for s3 storage");
     }
 
-    return `${this.env.R2_PUBLIC_BASE_URL.replace(/\/$/, "")}/${path}`;
+    return `${this.env.S3_PUBLIC_URL.replace(/\/$/, "")}/${path}`;
   }
 
   async deleteFile(path: string): Promise<void> {

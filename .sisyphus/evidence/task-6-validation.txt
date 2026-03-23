@@ -1,0 +1,14 @@
+Test: Invalid value validation (STORAGE_PROVIDER)
+Endpoint: PATCH /api/v1/admin/settings
+Expected: HTTP 400 with validation error
+
+Request:
+curl -X PATCH -H "Authorization: Bearer {token}" -H "Content-Type: application/json" \
+  -d '{"settings":[{"key":"STORAGE_PROVIDER","value":"invalid"}]}' \
+  http://localhost:8788/api/v1/admin/settings
+
+Response:
+{"data":null,"error":"STORAGE_PROVIDER must be one of: supabase, s3, r2","traceId":"019d1917-73c2-7726-875c-f4eb11c171db","code":50000,"timestamp":1774242461382}
+HTTP Status: 400
+
+Result: PASS - HTTP 400 with validation error message

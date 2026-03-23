@@ -22,6 +22,24 @@ const recordUploadBody = type({
   signature: "string >= 1",
 });
 
+function addExternalLink<T extends { path: string; provider: string }>(
+  resource: T,
+  env: Env,
+): T & { externalLink: string } {
+  const storageService = createStorageService(env);
+  return {
+    ...resource,
+    externalLink: storageService.getPublicUrl(resource.path),
+  };
+}
+
+function addExternalLinkToArray<T extends { path: string; provider: string }>(
+  resources: T[],
+  env: Env,
+): Array<T & { externalLink: string }> {
+  return resources.map((r) => addExternalLink(r, env));
+}
+
 export const resourcesRoutes = new Hono<{ Bindings: Env }>()
   .get("/upload-url", arktypeValidator("query", uploadUrlQuery), async (c) => {
     const user = c.get("user");
@@ -185,8 +203,6 @@ export const resourcesRoutes = new Hono<{ Bindings: Env }>()
         );
       }
 
-      const publicUrl = storageService.getPublicUrl(path);
-
       const [result] = await db
         .insert(resources)
         .values({
@@ -194,7 +210,6 @@ export const resourcesRoutes = new Hono<{ Bindings: Env }>()
           size: fileSize,
           provider: storageService.providerName,
           path,
-          externalLink: publicUrl,
           filename,
           id: uuidv7(),
           userId: user.id,
@@ -212,12 +227,14 @@ export const resourcesRoutes = new Hono<{ Bindings: Env }>()
         );
       }
 
-      return c.json(success({ data: result, traceId }), 200);
+      const resultWithExternalLink = addExternalLink(result, env);
+      return c.json(success({ data: resultWithExternalLink, traceId }), 200);
     },
   )
   .get("/user-all", async (c) => {
     const user = c.get("user");
     const db = c.get("db");
+    const env = c.get("env");
     const traceId = c.get("traceId");
 
     if (!user) {
@@ -236,20 +253,22 @@ export const resourcesRoutes = new Hono<{ Bindings: Env }>()
       orderBy: [desc(resources.createdAt)],
     });
 
-    return c.json(success({ data: result, traceId }), 200);
+    const resultWithExternalLinks = addExternalLinkToArray(result, env);
+    return c.json(success({ data: resultWithExternalLinks, traceId }), 200);
   })
   .get("/:id", async (c) => {
     const { id } = c.req.param();
     const user = c.get("user");
     const db = c.get("db");
+    const env = c.get("env");
     const traceId = c.get("traceId");
 
     if (!user) {
       return c.json(
         fail({
           message: "请先登录",
-          code: GeneralCode.NeedLogin,
           traceId,
+          code: GeneralCode.NeedLogin,
         }),
         401,
       );
@@ -270,5 +289,6 @@ export const resourcesRoutes = new Hono<{ Bindings: Env }>()
       );
     }
 
-    return c.json(success({ data: result, traceId }), 200);
+    const resultWithExternalLink = addExternalLink(result, env);
+    return c.json(success({ data: resultWithExternalLink, traceId }), 200);
   });

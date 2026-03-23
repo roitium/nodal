@@ -18,7 +18,7 @@ export function parseCloudflareEnv(
     SUPABASE_SERVICE_ROLE_KEY: bindings?.SUPABASE_SERVICE_ROLE_KEY,
     STORAGE_BUCKET: bindings?.STORAGE_BUCKET,
     STORAGE_PROVIDER: bindings?.STORAGE_PROVIDER || "supabase",
-    R2_PUBLIC_BASE_URL: bindings?.R2_PUBLIC_BASE_URL,
+    S3_PUBLIC_URL: bindings?.S3_PUBLIC_URL,
     S3_ENDPOINT: bindings?.S3_ENDPOINT,
     S3_ACCESS_KEY_ID: bindings?.S3_ACCESS_KEY_ID,
     S3_SECRET_ACCESS_KEY: bindings?.S3_SECRET_ACCESS_KEY,

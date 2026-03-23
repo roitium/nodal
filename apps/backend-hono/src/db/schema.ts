@@ -20,6 +20,7 @@ export const users = pgTable("users", {
   coverImageUrl: text("cover_image_url"),
   bio: text("bio"),
   isAdmin: boolean("is_admin").default(false),
+  banned: boolean("banned").default(false),
   createdAt: timestamp("created_at", { mode: "string", withTimezone: true })
     .defaultNow()
     .notNull(),
@@ -98,7 +99,6 @@ export const resources = pgTable("resources", {
   provider: text("provider").default("supabase").notNull(),
   path: text("path").notNull(),
 
-  externalLink: text("external_link"),
   createdAt: timestamp("created_at").defaultNow(),
   memoId: uuid("memo_id").references(() => memos.id, { onDelete: "set null" }),
 });
@@ -135,3 +135,89 @@ export const resourcesRelations = relations(resources, ({ one }) => ({
     references: [memos.id],
   }),
 }));
+
+export const settings = pgTable("settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+  isEncrypted: boolean("is_encrypted").default(false).notNull(),
+  isSecret: boolean("is_secret").default(false).notNull(),
+  description: text("description"),
+  updatedAt: timestamp("updated_at", { mode: "string", withTimezone: true })
+    .defaultNow()
+    .$onUpdate(() => sql`now()`)
+    .notNull(),
+  updatedBy: uuid("updated_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+});
+
+export const settingsRelations = relations(settings, ({ one }) => ({
+  updater: one(users, {
+    fields: [settings.updatedBy],
+    references: [users.id],
+  }),
+}));
+
+// Default settings values
+export const defaultSettings = [
+  {
+    key: "ROOT_DOMAIN",
+    value: "nodal.roitium.com",
+    isSecret: false,
+    description: "Application root domain",
+  },
+  {
+    key: "STORAGE_PROVIDER",
+    value: "supabase",
+    isSecret: false,
+    description: "Storage provider: supabase, s3, or r2",
+  },
+  {
+    key: "SUPABASE_URL",
+    value: "",
+    isSecret: false,
+    description: "Supabase project URL",
+  },
+  {
+    key: "STORAGE_BUCKET",
+    value: "resources",
+    isSecret: false,
+    description: "Storage bucket name",
+  },
+  {
+    key: "SUPABASE_SERVICE_ROLE_KEY",
+    value: "",
+    isSecret: true,
+    description: "Supabase service role key (encrypted)",
+  },
+  {
+    key: "S3_ENDPOINT",
+    value: "",
+    isSecret: false,
+    description: "S3/R2 endpoint URL",
+  },
+  {
+    key: "S3_PUBLIC_URL",
+    value: "",
+    isSecret: false,
+    description: "S3/R2 public URL",
+  },
+  {
+    key: "S3_REGION",
+    value: "auto",
+    isSecret: false,
+    description: "S3/R2 region",
+  },
+  {
+    key: "S3_ACCESS_KEY_ID",
+    value: "",
+    isSecret: true,
+    description: "S3/R2 access key (encrypted)",
+  },
+  {
+    key: "S3_SECRET_ACCESS_KEY",
+    value: "",
+    isSecret: true,
+    description: "S3/R2 secret key (encrypted)",
+  },
+];

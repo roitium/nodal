@@ -1,0 +1,14 @@
+Test: Non-existent key validation
+Endpoint: PATCH /api/v1/admin/settings
+Expected: HTTP 404 with SettingNotFound error
+
+Request:
+curl -X PATCH -H "Authorization: Bearer {token}" -H "Content-Type: application/json" \
+  -d '{"settings":[{"key":"NONEXISTENT_KEY","value":"value"}]}' \
+  http://localhost:8788/api/v1/admin/settings
+
+Response:
+{"data":null,"error":"Setting not found: NONEXISTENT_KEY","traceId":"019d1917-a799-7754-866b-59490345a6b4","code":60003,"timestamp":1774242474727}
+HTTP Status: 404
+
+Result: PASS - HTTP 404 with code: 60003 (SettingNotFound)

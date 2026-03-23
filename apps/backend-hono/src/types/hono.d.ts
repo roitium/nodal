@@ -14,5 +14,6 @@ declare module "hono" {
     user: SessionUser | null;
     jwt: JwtHelper;
     db: PostgresJsDatabase<typeof schema>;
+    isAdmin: boolean;
   }
 }
