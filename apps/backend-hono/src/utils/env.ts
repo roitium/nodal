@@ -19,6 +19,10 @@ export function parseCloudflareEnv(
     STORAGE_BUCKET: bindings?.STORAGE_BUCKET,
     STORAGE_PROVIDER: bindings?.STORAGE_PROVIDER || "supabase",
     R2_PUBLIC_BASE_URL: bindings?.R2_PUBLIC_BASE_URL,
+    S3_ENDPOINT: bindings?.S3_ENDPOINT,
+    S3_ACCESS_KEY_ID: bindings?.S3_ACCESS_KEY_ID,
+    S3_SECRET_ACCESS_KEY: bindings?.S3_SECRET_ACCESS_KEY,
+    S3_REGION: bindings?.S3_REGION,
   };
 
   const validated = CloudflareEnvSchema(merged);

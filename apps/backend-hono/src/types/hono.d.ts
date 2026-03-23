@@ -11,7 +11,6 @@ declare module "hono" {
   interface ContextVariableMap {
     env: ResolvedCloudflareEnv;
     traceId: string;
-    tenant: string | null;
     user: SessionUser | null;
     jwt: JwtHelper;
     db: PostgresJsDatabase<typeof schema>;

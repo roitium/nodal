@@ -19,6 +19,7 @@ import {
   Settings,
   LogOut,
   UserRound,
+  Images,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import {
@@ -64,7 +65,7 @@ export function AppSidebar() {
           <img
             src="/icon.png"
             alt="Nodal Logo"
-            className="h-8 w-8 rounded-md object-cover pulse-halo"
+            className="h-8 w-8 rounded-md object-cover"
           />
           <span className="app-heading text-lg font-semibold tracking-tight">
             Nodal
@@ -101,6 +102,16 @@ export function AppSidebar() {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+              {user && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={isActive("/resources")}>
+                    <Link to="/resources" onClick={closeMobileSidebar}>
+                      <Images className="h-4 w-4" />
+                      <span>{t("sidebar.resources")}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={isActive("/settings")}>
                   <Link to="/settings" onClick={closeMobileSidebar}>

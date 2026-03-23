@@ -4,7 +4,7 @@ import type {} from "@/types/hono";
 import { authMiddleware } from "@/middleware/auth";
 import { dbMiddleware } from "@/middleware/db";
 import { envMiddleware } from "@/middleware/env";
-import { subdomainMiddleware } from "@/middleware/subdomain";
+
 import { traceIdMiddleware } from "@/middleware/trace";
 import { authRoutes } from "@/routes/auth";
 import { memosRoutes } from "@/routes/memos";
@@ -35,7 +35,6 @@ app.use("*", traceIdMiddleware);
 app.use("/api/v1/*", envMiddleware);
 app.use("/api/v1/*", dbMiddleware);
 app.use("/api/v1/*", authMiddleware);
-app.use("/api/v1/*", subdomainMiddleware);
 
 const route = app
   .route("/api/v1/auth", authRoutes)

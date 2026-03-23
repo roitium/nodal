@@ -37,7 +37,7 @@ export function Heatmap({ username }: { username?: string }) {
   }
 
   return (
-    <div className="surface-card w-full overflow-hidden rounded-xl px-3.5 pb-2 pt-3">
+    <div className="surface-card mx-3 w-auto overflow-hidden rounded-xl px-3.5 pb-2 pt-3">
       <div className="mb-2 text-xs font-medium text-muted-foreground">
         {t("heatmap.totalCount", { count: stats?.reduce((acc, curr) => acc + curr.count, 0) || 0 })}
       </div>

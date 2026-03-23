@@ -3,12 +3,10 @@ import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "vite";
 import babel from "vite-plugin-babel";
 import tsconfigPaths from "vite-tsconfig-paths";
-import devtoolsJson from "vite-plugin-devtools-json";
 import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig({
   plugins: [
-    devtoolsJson(),
     tailwindcss(),
     reactRouter(),
     babel({

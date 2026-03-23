@@ -118,13 +118,12 @@ export const memosRoutes = new Hono<{ Bindings: Env }>()
   .get("/timeline", arktypeValidator("query", timelineQuery), async (c) => {
     const user = c.get("user");
     const query = c.req.valid("query");
-    const tenant = c.get("tenant");
     const db = c.get("db");
     const traceId = c.get("traceId");
 
     const limit = query.limit ? Number.parseInt(query.limit, 10) : 20;
-    const { cursorCreatedAt, cursorId, date, parentId, scope } = query;
-    const targetUsername = tenant ?? query.username;
+    const { cursorCreatedAt, cursorId, date, parentId, scope, username } = query;
+    const targetUsername = username;
     const currentUserId = user?.id ?? "";
 
     const filters = parentId
@@ -316,10 +315,9 @@ export const memosRoutes = new Hono<{ Bindings: Env }>()
     const user = c.get("user");
     const query = c.req.valid("query");
     const db = c.get("db");
-    const tenant = c.get("tenant");
     const traceId = c.get("traceId");
 
-    const targetUsername = tenant ?? query.username;
+    const { username: targetUsername } = query;
     let targetUserId = user?.id;
 
     if (targetUsername) {
