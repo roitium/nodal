@@ -10,6 +10,8 @@ import {
 import { memos, resources, users } from "@/db/schema";
 import { createStorageService } from "@/services/storage";
 import type { Env } from "@/types/env";
+import type { StorageConfig } from "@/types/storage-config";
+import { getStorageConfig } from "@/utils/settings";
 import { GeneralCode, MemoCode, UserCode } from "@/utils/code";
 import { fail, success } from "@/utils/response";
 
@@ -32,9 +34,9 @@ interface MemoWithResources {
 
 function addExternalLinkToResources<T extends ResourceWithPath>(
   resource: T,
-  env: Env,
+  config: StorageConfig,
 ): T & { externalLink: string } {
-  const storageService = createStorageService(env);
+  const storageService = createStorageService(config);
   return {
     ...resource,
     externalLink: storageService.getPublicUrl(resource.path),
@@ -43,20 +45,20 @@ function addExternalLinkToResources<T extends ResourceWithPath>(
 
 function processMemoResources<T extends MemoWithResources>(
   memo: T,
-  env: Env,
+  config: StorageConfig,
 ): T {
   const processedMemo = { ...memo };
 
   if (processedMemo.resources) {
     processedMemo.resources = processedMemo.resources.map((r) =>
-      addExternalLinkToResources(r, env),
+      addExternalLinkToResources(r, config),
     );
   }
 
   if (processedMemo.replies) {
     processedMemo.replies = processedMemo.replies.map((reply) => ({
       ...reply,
-      resources: reply.resources?.map((r) => addExternalLinkToResources(r, env)),
+      resources: reply.resources?.map((r) => addExternalLinkToResources(r, config)),
     }));
   }
 
@@ -251,9 +253,11 @@ export const memosRoutes = new Hono<{ Bindings: Env }>()
     const hasNextPage = data.length > limit;
     const items = hasNextPage ? data.slice(0, limit) : data;
 
-    const env = c.get("env");
+    const db = c.get("db");
+    const encryptionKey = c.env.SETTINGS_ENCRYPTION_KEY;
+    const storageConfig = await getStorageConfig(db, encryptionKey);
     const itemsWithExternalLinks = items.map((item) =>
-      processMemoResources(item, env),
+      processMemoResources(item, storageConfig),
     );
 
     return c.json(
@@ -365,9 +369,11 @@ export const memosRoutes = new Hono<{ Bindings: Env }>()
       with: memoWith,
     });
 
-    const env = c.get("env");
+    const db = c.get("db");
+    const encryptionKey = c.env.SETTINGS_ENCRYPTION_KEY;
+    const storageConfig = await getStorageConfig(db, encryptionKey);
     const resultWithExternalLinks = result
-      ? processMemoResources(result, env)
+      ? processMemoResources(result, storageConfig)
       : result;
 
     return c.json(success({ data: resultWithExternalLinks, traceId }), 200);
@@ -453,9 +459,11 @@ export const memosRoutes = new Hono<{ Bindings: Env }>()
       with: memoWith,
     });
 
-    const env = c.get("env");
+    const db = c.get("db");
+    const encryptionKey = c.env.SETTINGS_ENCRYPTION_KEY;
+    const storageConfig = await getStorageConfig(db, encryptionKey);
     const resultWithExternalLinks = result.map((item) =>
-      processMemoResources(item, env),
+      processMemoResources(item, storageConfig),
     );
 
     return c.json(success({ data: resultWithExternalLinks, traceId }), 200);

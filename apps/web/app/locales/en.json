@@ -39,6 +39,7 @@
         "enterValue": "Enter a new value for this setting.",
         "value": "Value",
         "enterNewValue": "Enter new value",
+        "selectProvider": "Select storage provider",
         "storageProviderHint": "Must be one of: supabase, s3, r2"
       }
     },

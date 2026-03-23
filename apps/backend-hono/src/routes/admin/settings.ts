@@ -9,6 +9,27 @@ import { AdminCode, GeneralCode } from "@/utils/code";
 import { fail, success } from "@/utils/response";
 import type { Env } from "@/types/env";
 
+interface SettingsCache {
+  data: any[];
+  timestamp: number;
+}
+
+let settingsCache: SettingsCache | null = null;
+const CACHE_TTL = 5 * 60 * 1000;
+
+function getCachedSettings() {
+  if (!settingsCache) return null;
+  if (Date.now() - settingsCache.timestamp > CACHE_TTL) {
+    settingsCache = null;
+    return null;
+  }
+  return settingsCache.data;
+}
+
+function setCachedSettings(data: any[]) {
+  settingsCache = { data, timestamp: Date.now() };
+}
+
 const updateSettingsBody = type({
   settings: type([
     {
@@ -99,11 +120,16 @@ export const adminSettingsRoutes = new Hono<{ Bindings: Env }>()
     const db = c.get("db");
     const traceId = c.get("traceId");
 
-    const allSettings = await db.query.settings.findMany({
-      orderBy: (settings, { asc }) => [asc(settings.key)],
-    });
+    let allSettings = getCachedSettings();
 
-    const maskedSettings = allSettings.map((s) => ({
+    if (!allSettings) {
+      allSettings = await db.query.settings.findMany({
+        orderBy: (settings, { asc }) => [asc(settings.key)],
+      });
+      setCachedSettings(allSettings);
+    }
+
+    const maskedSettings = allSettings.map((s: any) => ({
       key: s.key,
       value: s.isSecret ? mask(s.value) : s.value,
       description: s.description,
@@ -226,6 +252,8 @@ export const adminSettingsRoutes = new Hono<{ Bindings: Env }>()
         })
         .where(eq(settings.key, key));
     }
+
+    settingsCache = null;
 
     // Fetch updated settings
     const updatedSettings = await db.query.settings.findMany({

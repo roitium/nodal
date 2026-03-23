@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import type { ResolvedCloudflareEnv } from "@/types/env";
+import type { StorageConfig } from "@/types/storage-config";
 import type {
   IStorageProvider,
   StoredObjectMeta,
@@ -12,21 +12,21 @@ export class SupabaseStorageProvider implements IStorageProvider {
   private url: string;
   readonly providerName = "supabase";
 
-  constructor(env: ResolvedCloudflareEnv) {
+  constructor(config: StorageConfig) {
     if (
-      !env.SUPABASE_URL ||
-      !env.SUPABASE_SERVICE_ROLE_KEY ||
-      !env.STORAGE_BUCKET
+      !config.SUPABASE_URL ||
+      !config.SUPABASE_SERVICE_ROLE_KEY ||
+      !config.STORAGE_BUCKET
     ) {
       throw new Error(
         "SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY and STORAGE_BUCKET are required for supabase storage",
       );
     }
 
-    this.url = env.SUPABASE_URL;
-    this.bucket = env.STORAGE_BUCKET;
+    this.url = config.SUPABASE_URL;
+    this.bucket = config.STORAGE_BUCKET;
 
-    this.client = createClient(this.url, env.SUPABASE_SERVICE_ROLE_KEY);
+    this.client = createClient(this.url, config.SUPABASE_SERVICE_ROLE_KEY);
   }
 
   async getUploadUrl(path: string): Promise<UploadResult> {

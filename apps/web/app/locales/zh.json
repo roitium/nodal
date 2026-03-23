@@ -39,6 +39,7 @@
         "enterValue": "为此设置输入一个新值。",
         "value": "值",
         "enterNewValue": "输入新值",
+        "selectProvider": "选择存储提供商",
         "storageProviderHint": "必须是以下之一：supabase、s3、r2"
       }
     },

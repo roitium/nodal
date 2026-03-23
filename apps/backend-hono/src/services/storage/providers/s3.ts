@@ -5,7 +5,7 @@ import {
   S3Client,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import type { ResolvedCloudflareEnv } from "@/types/env";
+import type { StorageConfig } from "@/types/storage-config";
 import type {
   IStorageProvider,
   StoredObjectMeta,
@@ -16,27 +16,29 @@ export class S3StorageProvider implements IStorageProvider {
   readonly providerName = "s3";
   private client: S3Client;
   private bucket: string;
+  private config: StorageConfig;
 
-  constructor(private env: ResolvedCloudflareEnv) {
+  constructor(config: StorageConfig) {
     if (
-      !env.S3_ENDPOINT ||
-      !env.S3_ACCESS_KEY_ID ||
-      !env.S3_SECRET_ACCESS_KEY ||
-      !env.STORAGE_BUCKET
+      !config.S3_ENDPOINT ||
+      !config.S3_ACCESS_KEY_ID ||
+      !config.S3_SECRET_ACCESS_KEY ||
+      !config.STORAGE_BUCKET
     ) {
       throw new Error(
         "S3_ENDPOINT, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, and STORAGE_BUCKET are required for s3 storage",
       );
     }
 
-    this.bucket = env.STORAGE_BUCKET;
+    this.config = config;
+    this.bucket = config.STORAGE_BUCKET;
 
     this.client = new S3Client({
-      endpoint: env.S3_ENDPOINT,
-      region: env.S3_REGION || "auto",
+      endpoint: config.S3_ENDPOINT,
+      region: config.S3_REGION || "auto",
       credentials: {
-        accessKeyId: env.S3_ACCESS_KEY_ID,
-        secretAccessKey: env.S3_SECRET_ACCESS_KEY,
+        accessKeyId: config.S3_ACCESS_KEY_ID,
+        secretAccessKey: config.S3_SECRET_ACCESS_KEY,
       },
     });
   }
@@ -80,11 +82,11 @@ export class S3StorageProvider implements IStorageProvider {
   }
 
   getPublicUrl(path: string): string {
-    if (!this.env.S3_PUBLIC_URL) {
+    if (!this.config.S3_PUBLIC_URL) {
       throw new Error("S3_PUBLIC_URL is required for s3 storage");
     }
 
-    return `${this.env.S3_PUBLIC_URL.replace(/\/$/, "")}/${path}`;
+    return `${this.config.S3_PUBLIC_URL.replace(/\/$/, "")}/${path}`;
   }
 
   async deleteFile(path: string): Promise<void> {

@@ -38,12 +38,12 @@ const getSettingGroups = (t: (key: string) => string) => ({
   system: {
     title: t("admin.settings.groups.system"),
     description: t("admin.settings.groups.systemDesc"),
-    keys: ["ROOT_DOMAIN"],
+    keys: ["ROOT_DOMAIN", "STORAGE_PROVIDER", "STORAGE_BUCKET"],
   },
   supabase: {
     title: t("admin.settings.groups.supabase"),
     description: t("admin.settings.groups.supabaseDesc"),
-    keys: ["STORAGE_PROVIDER", "SUPABASE_URL", "STORAGE_BUCKET", "SUPABASE_SERVICE_ROLE_KEY"],
+    keys: ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"],
   },
   s3: {
     title: t("admin.settings.groups.s3"),
@@ -291,21 +291,34 @@ export default function AdminSettings() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="value">{t("admin.settings.messages.value")}</Label>
-              <Input
-                id="value"
-                type={editingSetting?.is_secret ? "password" : "text"}
-                placeholder={t("admin.settings.messages.enterNewValue")}
-                value={inputValue}
-                onChange={(e) => {
-                  setInputValue(e.target.value);
-                  setValidationError(null);
-                }}
-                data-testid={`input-${editingSetting?.key}`}
-              />
-              {editingSetting?.key === "STORAGE_PROVIDER" && (
-                <p className="text-xs text-muted-foreground">
-                  {t("admin.settings.messages.storageProviderHint")}
-                </p>
+              {editingSetting?.key === "STORAGE_PROVIDER" ? (
+                <select
+                  id="value"
+                  value={inputValue}
+                  onChange={(e) => {
+                    setInputValue(e.target.value);
+                    setValidationError(null);
+                  }}
+                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                  data-testid={`input-${editingSetting?.key}`}
+                >
+                  <option value="">{t("admin.settings.messages.selectProvider")}</option>
+                  <option value="supabase">Supabase</option>
+                  <option value="s3">S3</option>
+                  <option value="r2">R2</option>
+                </select>
+              ) : (
+                <Input
+                  id="value"
+                  type={editingSetting?.is_secret ? "password" : "text"}
+                  placeholder={t("admin.settings.messages.enterNewValue")}
+                  value={inputValue}
+                  onChange={(e) => {
+                    setInputValue(e.target.value);
+                    setValidationError(null);
+                  }}
+                  data-testid={`input-${editingSetting?.key}`}
+                />
               )}
               {validationError && (
                 <p className="text-sm text-destructive">{validationError}</p>
