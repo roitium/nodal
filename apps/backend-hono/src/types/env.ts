@@ -1,7 +1,6 @@
 export type Env = {
   DATABASE_URL: string;
   JWT_SECRET: string;
-  ROOT_DOMAIN?: string;
   SUPABASE_URL?: string;
   SUPABASE_SERVICE_ROLE_KEY?: string;
   STORAGE_BUCKET?: string;
