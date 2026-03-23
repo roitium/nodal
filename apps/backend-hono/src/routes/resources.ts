@@ -103,7 +103,8 @@ export const resourcesRoutes = new Hono<HonoBindings>()
 
     const path = `resources/${user.id}/${uuidv7()}.${ext}`;
     const payload = {
-      user: user.id,
+      sub: user.id,
+      username: user.username,
       path,
       fileType,
       ext,
@@ -169,7 +170,7 @@ export const resourcesRoutes = new Hono<HonoBindings>()
         );
       }
 
-      if (payload.path !== path || payload.user !== user.id) {
+      if (payload.path !== path || payload.sub !== user.id) {
         return c.json(
           fail({
             message: "签名内包含数据与请求不一致",

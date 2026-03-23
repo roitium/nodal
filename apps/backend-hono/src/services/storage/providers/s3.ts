@@ -30,16 +30,29 @@ export class S3StorageProvider implements IStorageProvider {
       );
     }
 
+    // Validate endpoint - must be a pure endpoint without path
+    // e.g., https://xxx.r2.cloudflarestorage.com (NOT https://xxx.r2.cloudflarestorage.com/bucket-name)
+    const endpointUrl = new URL(config.S3_ENDPOINT);
+    if (endpointUrl.pathname && endpointUrl.pathname !== "/") {
+      throw new Error(
+        `S3_ENDPOINT must be a pure endpoint without path. Got: ${config.S3_ENDPOINT}. Remove the bucket name from the URL.`,
+      );
+    }
+
     this.config = config;
     this.bucket = config.STORAGE_BUCKET;
 
     this.client = new S3Client({
-      endpoint: config.S3_ENDPOINT,
+      endpoint: config.S3_ENDPOINT.endsWith("/") 
+        ? config.S3_ENDPOINT 
+        : config.S3_ENDPOINT + "/",
       region: config.S3_REGION || "auto",
       credentials: {
         accessKeyId: config.S3_ACCESS_KEY_ID,
         secretAccessKey: config.S3_SECRET_ACCESS_KEY,
       },
+      forcePathStyle: true,
+      tls: true,
     });
   }
 
