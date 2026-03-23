@@ -1,19 +1,21 @@
-import { useState, useRef, useCallback, useMemo } from "react";
-import { useNavigate, Link } from "react-router";
+import { useState, useMemo, useCallback } from "react";
+import { useNavigate } from "react-router";
 import { useResources, type Resource } from "~/hooks/queries/use-resources";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-} from "~/components/ui/dropdown-menu";
 import { Skeleton } from "~/components/ui/skeleton";
-import { FileImage, FileText, File, ExternalLink, FolderOpen } from "lucide-react";
+import { FileImage, FileText, File } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import Lightbox, { useLightboxState, IconButton, createIcon } from "yet-another-react-lightbox";
+import "yet-another-react-lightbox/styles.css";
+import { useLightboxHistory } from "~/hooks/use-lightbox-history";
 
 interface GroupedResources {
   [date: string]: Resource[];
 }
+
+const ViewMemoIcon = createIcon(
+  "ViewMemo",
+  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 2 5 5h-5V4zM6 20V4h5v7h7v9H6z" />
+);
 
 function formatDateHeader(dateStr: string): string {
   const date = new Date(dateStr);
@@ -44,136 +46,88 @@ function getFileIcon(type: string) {
   return <File className="h-6 w-6 text-muted-foreground" />;
 }
 
-interface ResourceContextMenuProps {
-  resource: Resource;
-  children: React.ReactNode;
+interface ViewMemoButtonProps {
+  onNavigate: (memoId: string) => void;
 }
 
-function ResourceContextMenu({ resource, children }: ResourceContextMenuProps) {
-  const navigate = useNavigate();
-  const [open, setOpen] = useState(false);
-  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
-  const touchStartPos = useRef<{ x: number; y: number } | null>(null);
-
-  const handleViewMemo = useCallback(() => {
-    if (resource.memoId) {
-      navigate(`/memo/${resource.memoId}`);
-    }
-    setOpen(false);
-  }, [navigate, resource.memoId]);
-
-  const handleOpenOriginal = useCallback(() => {
-    window.open(resource.externalLink, "_blank");
-    setOpen(false);
-  }, [resource.externalLink]);
-
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    const touch = e.touches[0];
-    touchStartPos.current = { x: touch.clientX, y: touch.clientY };
-
-    longPressTimer.current = setTimeout(() => {
-      setOpen(true);
-    }, 500);
-  }, []);
-
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!touchStartPos.current || !longPressTimer.current) return;
-
-    const touch = e.touches[0];
-    const deltaX = Math.abs(touch.clientX - touchStartPos.current.x);
-    const deltaY = Math.abs(touch.clientY - touchStartPos.current.y);
-
-    if (deltaX > 10 || deltaY > 10) {
-      clearTimeout(longPressTimer.current);
-      longPressTimer.current = null;
-    }
-  }, []);
-
-  const handleTouchEnd = useCallback(() => {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
-      longPressTimer.current = null;
-    }
-    touchStartPos.current = null;
-  }, []);
-
-  const handleContextMenu = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    setOpen(true);
-  }, []);
-
-  const isImage = resource.type.startsWith("image/");
+function ViewMemoButton({ onNavigate }: ViewMemoButtonProps) {
+  const { currentSlide } = useLightboxState();
+  const memoId = currentSlide?.memoId as string | undefined;
 
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
-      <div
-        onContextMenu={handleContextMenu}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        onTouchCancel={handleTouchEnd}
-      >
-        {children}
-      </div>
-      <DropdownMenuContent align="start" className="w-48">
-        {resource.memoId && (
-          <>
-            <DropdownMenuItem onClick={handleViewMemo}>
-              <FolderOpen className="mr-2 h-4 w-4" />
-              查看所在 Memo
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-          </>
-        )}
-        <DropdownMenuItem onClick={handleOpenOriginal}>
-          <ExternalLink className="mr-2 h-4 w-4" />
-          打开原图
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <IconButton
+      label="查看所在 Memo"
+      icon={ViewMemoIcon}
+      disabled={!memoId}
+      onClick={() => {
+        if (memoId) {
+          onNavigate(memoId);
+        }
+      }}
+    />
   );
 }
 
 interface ResourceGridItemProps {
   resource: Resource;
+  onClick: () => void;
 }
 
-function ResourceGridItem({ resource }: ResourceGridItemProps) {
+function ResourceGridItem({ resource, onClick }: ResourceGridItemProps) {
   const isImage = resource.type.startsWith("image/");
 
   if (isImage) {
     return (
-      <ResourceContextMenu resource={resource}>
-        <div className="group relative aspect-square cursor-pointer overflow-hidden rounded-lg bg-muted">
-          <img
-            src={resource.externalLink}
-            alt={resource.filename}
-            className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
-            loading="lazy"
-          />
-          <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/10" />
-        </div>
-      </ResourceContextMenu>
+      <div
+        className="group relative aspect-square cursor-pointer overflow-hidden rounded-lg bg-muted"
+        onClick={onClick}
+      >
+        <img
+          src={resource.externalLink}
+          alt={resource.filename}
+          className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
+          loading="lazy"
+        />
+        <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/10" />
+      </div>
     );
   }
 
   return (
-    <ResourceContextMenu resource={resource}>
-      <div className="group relative aspect-square cursor-pointer overflow-hidden rounded-lg bg-muted p-4">
-        <div className="flex h-full flex-col items-center justify-center gap-2">
-          {getFileIcon(resource.type)}
-          <span className="max-w-full truncate text-xs text-muted-foreground">
-            {resource.filename}
-          </span>
-        </div>
+    <div
+      className="group relative aspect-square cursor-pointer overflow-hidden rounded-lg bg-muted p-4"
+      onClick={onClick}
+    >
+      <div className="flex h-full flex-col items-center justify-center gap-2">
+        {getFileIcon(resource.type)}
+        <span className="max-w-full truncate text-xs text-muted-foreground">
+          {resource.filename}
+        </span>
       </div>
-    </ResourceContextMenu>
+    </div>
   );
 }
 
 export default function ResourcesPage() {
+  const navigate = useNavigate();
   const { data: resources, isLoading, error } = useResources();
   const { t } = useTranslation();
+
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+  const { closeWithHistory } = useLightboxHistory(lightboxOpen, setLightboxOpen);
+
+  const imageResources = useMemo(() => {
+    return resources?.filter((r) => r.type.startsWith("image/")) || [];
+  }, [resources]);
+
+  const lightboxSlides = useMemo(() => {
+    return imageResources.map((resource) => ({
+      src: resource.externalLink,
+      alt: resource.filename,
+      memoId: resource.memoId,
+    }));
+  }, [imageResources]);
 
   const groupedResources = useMemo(() => {
     if (!resources) return {};
@@ -191,6 +145,19 @@ export default function ResourcesPage() {
       Object.entries(grouped).sort((a, b) => b[0].localeCompare(a[0]))
     );
   }, [resources]);
+
+  const handleImageClick = useCallback((resource: Resource) => {
+    const index = imageResources.findIndex((r) => r.id === resource.id);
+    if (index !== -1) {
+      setLightboxIndex(index);
+      setLightboxOpen(true);
+    }
+  }, [imageResources]);
+
+  const handleNavigateToMemo = useCallback((memoId: string) => {
+    setLightboxOpen(false);
+    navigate(`/memo/${memoId}`);
+  }, [navigate]);
 
   if (isLoading) {
     return (
@@ -246,12 +213,30 @@ export default function ResourcesPage() {
             </h2>
             <div className="grid grid-cols-3 gap-1 sm:grid-cols-4 sm:gap-2 md:grid-cols-5 lg:grid-cols-6">
               {dateResources.map((resource) => (
-                <ResourceGridItem key={resource.id} resource={resource} />
+                <ResourceGridItem
+                  key={resource.id}
+                  resource={resource}
+                  onClick={() => handleImageClick(resource)}
+                />
               ))}
             </div>
           </section>
         ))}
       </div>
+
+      <Lightbox
+        open={lightboxOpen}
+        close={closeWithHistory}
+        index={lightboxIndex}
+        slides={lightboxSlides}
+        controller={{ closeOnBackdropClick: true }}
+        toolbar={{
+          buttons: [
+            <ViewMemoButton key="view-memo" onNavigate={handleNavigateToMemo} />,
+            "close",
+          ],
+        }}
+      />
     </div>
   );
 }

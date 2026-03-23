@@ -23,40 +23,6 @@ const recordUploadBody = type({
 });
 
 export const resourcesRoutes = new Hono<{ Bindings: Env }>()
-  .get("/:id", async (c) => {
-    const { id } = c.req.param();
-    const user = c.get("user");
-    const db = c.get("db");
-    const traceId = c.get("traceId");
-
-    if (!user) {
-      return c.json(
-        fail({
-          message: "请先登录",
-          code: GeneralCode.NeedLogin,
-          traceId,
-        }),
-        401,
-      );
-    }
-
-    const result = await db.query.resources.findFirst({
-      where: and(eq(resources.id, id), eq(resources.userId, user.id)),
-    });
-
-    if (!result) {
-      return c.json(
-        fail({
-          message: "资源不存在或该资源并不在你的账户下",
-          code: ResourceCode.NotFound,
-          traceId,
-        }),
-        404,
-      );
-    }
-
-    return c.json(success({ data: result, traceId }), 200);
-  })
   .get("/upload-url", arktypeValidator("query", uploadUrlQuery), async (c) => {
     const user = c.get("user");
     const traceId = c.get("traceId");
@@ -269,6 +235,40 @@ export const resourcesRoutes = new Hono<{ Bindings: Env }>()
       where: eq(resources.userId, user.id),
       orderBy: [desc(resources.createdAt)],
     });
+
+    return c.json(success({ data: result, traceId }), 200);
+  })
+  .get("/:id", async (c) => {
+    const { id } = c.req.param();
+    const user = c.get("user");
+    const db = c.get("db");
+    const traceId = c.get("traceId");
+
+    if (!user) {
+      return c.json(
+        fail({
+          message: "请先登录",
+          code: GeneralCode.NeedLogin,
+          traceId,
+        }),
+        401,
+      );
+    }
+
+    const result = await db.query.resources.findFirst({
+      where: and(eq(resources.id, id), eq(resources.userId, user.id)),
+    });
+
+    if (!result) {
+      return c.json(
+        fail({
+          message: "资源不存在或该资源并不在你的账户下",
+          code: ResourceCode.NotFound,
+          traceId,
+        }),
+        404,
+      );
+    }
 
     return c.json(success({ data: result, traceId }), 200);
   });
