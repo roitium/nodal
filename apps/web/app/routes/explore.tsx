@@ -1,9 +1,14 @@
 import { useEffect } from "react";
 import { MemoCard } from "~/components/memo-card";
 import { Skeleton } from "~/components/ui/skeleton";
+import {
+  TimelineOrderToggle,
+  type TimelineOrder,
+} from "~/components/timeline-order-toggle";
 import { useTimeline } from "~/hooks/queries/use-timeline";
 import { useInView } from "react-intersection-observer";
 import { useTranslation } from "react-i18next";
+import { useNavigate, useSearchParams } from "react-router";
 import type { Route } from "./+types/explore";
 
 export function meta({}: Route.MetaArgs) {
@@ -15,9 +20,23 @@ export function meta({}: Route.MetaArgs) {
 
 export default function ExploreRoute() {
   const { t } = useTranslation();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const order: TimelineOrder = searchParams.get("order") === "asc" ? "asc" : "desc";
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status } =
-    useTimeline({ scope: "explore" });
+    useTimeline({ scope: "explore", order });
   const { ref, inView } = useInView();
+
+  const updateOrder = (nextOrder: TimelineOrder) => {
+    const nextParams = new URLSearchParams(searchParams);
+    if (nextOrder === "asc") {
+      nextParams.set("order", "asc");
+    } else {
+      nextParams.delete("order");
+    }
+    const nextSearch = nextParams.toString();
+    navigate(nextSearch ? `/explore?${nextSearch}` : "/explore");
+  };
 
   useEffect(() => {
     if (inView && hasNextPage && !isFetchingNextPage) {
@@ -27,7 +46,10 @@ export default function ExploreRoute() {
 
   return (
     <div className="stagger-fade space-y-4 pb-20">
-      <h1 className="app-heading text-2xl font-semibold">{t("sidebar.explore")}</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="app-heading text-2xl font-semibold">{t("sidebar.explore")}</h1>
+        <TimelineOrderToggle value={order} onValueChange={updateOrder} />
+      </div>
 
       {status === "pending" ? (
         Array.from({ length: 3 }).map((_, i) => (

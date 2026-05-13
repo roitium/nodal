@@ -1,6 +1,6 @@
 import { arktypeValidator } from "@hono/arktype-validator";
 import { type } from "arktype";
-import { and, desc, eq, inArray, isNull, like, lt, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, isNull, like, lt, or, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import {
   v7 as uuidv7,
@@ -91,6 +91,7 @@ const timelineQuery = type({
   "scope?": "'self' | 'explore'",
   "date?": "string",
   "parentId?": "string",
+  "order?": "'asc' | 'desc'",
 });
 
 const publishBody = type({
@@ -194,6 +195,8 @@ export const memosRoutes = new Hono<HonoBindings>()
 
     const limit = query.limit ? Number.parseInt(query.limit, 10) : 20;
     const { cursorCreatedAt, cursorId, date, parentId, scope, username } = query;
+    const sortOrder = query.order === "asc" ? "asc" : "desc";
+    const isAscending = sortOrder === "asc";
     const targetUsername = username;
     const currentUserId = user?.id ?? "";
 
@@ -251,19 +254,26 @@ export const memosRoutes = new Hono<HonoBindings>()
     if (cursorCreatedAt && cursorId) {
       const cursorDate = new Date(cursorCreatedAt);
       filters.push(
-        or(
-          lt(memos.createdAt, cursorDate),
-          and(eq(memos.createdAt, cursorDate), lt(memos.id, cursorId)),
-        )!,
+        isAscending
+          ? or(
+              gt(memos.createdAt, cursorDate),
+              and(eq(memos.createdAt, cursorDate), gt(memos.id, cursorId)),
+            )!
+          : or(
+              lt(memos.createdAt, cursorDate),
+              and(eq(memos.createdAt, cursorDate), lt(memos.id, cursorId)),
+            )!,
       );
-      if (!date) {
+      if (!date && !isAscending) {
         filters.push(eq(memos.isPinned, false));
       }
     }
 
     const data = await db.query.memos.findMany({
       where: and(...filters),
-      orderBy: [desc(memos.isPinned), desc(memos.createdAt), desc(memos.id)],
+      orderBy: isAscending
+        ? [asc(memos.createdAt), asc(memos.id)]
+        : [desc(memos.isPinned), desc(memos.createdAt), desc(memos.id)],
       limit: limit + 1,
       with: memoWith,
     });

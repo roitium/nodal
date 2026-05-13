@@ -182,7 +182,9 @@
     "loadingMore": "Loading more...",
     "noMore": "No more memos",
     "empty": "No memos yet. Write your first one above!",
-    "error": "Error loading timeline"
+    "error": "Error loading timeline",
+    "newestFirst": "Newest",
+    "oldestFirst": "Oldest"
   },
   "memoDetail": {
     "title": "Memo",

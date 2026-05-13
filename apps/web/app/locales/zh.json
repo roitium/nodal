@@ -182,7 +182,9 @@
     "loadingMore": "加载中...",
     "noMore": "没有更多记录了",
     "empty": "还没有记录，在上面写下你的第一条记录吧！",
-    "error": "加载时间线失败"
+    "error": "加载时间线失败",
+    "newestFirst": "最新",
+    "oldestFirst": "最早"
   },
   "memoDetail": {
     "title": "记录",

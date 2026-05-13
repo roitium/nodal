@@ -1,11 +1,15 @@
 import { useTimeline } from "~/hooks/queries/use-timeline";
 import { CreateMemo } from "~/components/create-memo";
 import { MemoCard } from "~/components/memo-card";
+import {
+  TimelineOrderToggle,
+  type TimelineOrder,
+} from "~/components/timeline-order-toggle";
 import { Skeleton } from "~/components/ui/skeleton";
 import { useInView } from "react-intersection-observer";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { useSearchParams, useNavigate } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import { Calendar, X } from "lucide-react";
 import type { Route } from "./+types/home";
 
@@ -19,6 +23,7 @@ export function meta({}: Route.MetaArgs) {
 export default function HomeRoute() {
   const [searchParams] = useSearchParams();
   const dateFilter = searchParams.get("date") || undefined;
+  const order: TimelineOrder = searchParams.get("order") === "asc" ? "asc" : "desc";
   const navigate = useNavigate();
 
   const {
@@ -27,10 +32,28 @@ export default function HomeRoute() {
     hasNextPage,
     isFetchingNextPage,
     status,
-  } = useTimeline({ scope: "self", date: dateFilter });
+  } = useTimeline({ scope: "self", date: dateFilter, order });
 
   const { ref, inView } = useInView();
   const { t } = useTranslation();
+
+  const updateOrder = (nextOrder: TimelineOrder) => {
+    const nextParams = new URLSearchParams(searchParams);
+    if (nextOrder === "asc") {
+      nextParams.set("order", "asc");
+    } else {
+      nextParams.delete("order");
+    }
+    const nextSearch = nextParams.toString();
+    navigate(nextSearch ? `/?${nextSearch}` : "/");
+  };
+
+  const clearDateFilter = () => {
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete("date");
+    const nextSearch = nextParams.toString();
+    navigate(nextSearch ? `/?${nextSearch}` : "/");
+  };
 
   useEffect(() => {
     if (inView && hasNextPage && !isFetchingNextPage) {
@@ -42,20 +65,23 @@ export default function HomeRoute() {
     <div className="stagger-fade pb-20">
       <CreateMemo />
 
-      {dateFilter && (
-        <div className="mb-5 flex items-center gap-2 md:mb-6">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3 md:mb-6">
+        {dateFilter ? (
           <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/12 px-3 py-1 text-sm font-medium text-primary">
             <Calendar className="h-4 w-4" />
             <span>{dateFilter}</span>
             <button 
-              onClick={() => navigate("/")}
+              onClick={clearDateFilter}
               className="touch-target ml-1 rounded-full p-0.5 transition-colors hover:bg-primary/20"
             >
               <X className="h-3.5 w-3.5" />
             </button>
           </div>
-        </div>
-      )}
+        ) : (
+          <span />
+        )}
+        <TimelineOrderToggle value={order} onValueChange={updateOrder} />
+      </div>
 
       <div className="space-y-3 md:space-y-4">
         {status === "pending" ? (

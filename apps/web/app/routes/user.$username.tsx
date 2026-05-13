@@ -1,11 +1,16 @@
 import { useEffect } from "react";
 import { useInView } from "react-intersection-observer";
 import { MemoCard } from "~/components/memo-card";
+import {
+  TimelineOrderToggle,
+  type TimelineOrder,
+} from "~/components/timeline-order-toggle";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Skeleton } from "~/components/ui/skeleton";
 import { useTimeline } from "~/hooks/queries/use-timeline";
 import { useUserProfile } from "~/hooks/queries/use-user-profile";
 import { useTranslation } from "react-i18next";
+import { useNavigate, useSearchParams } from "react-router";
 import type { Route } from "./+types/user.$username";
 
 export function meta({ params }: Route.MetaArgs) {
@@ -18,10 +23,24 @@ export function meta({ params }: Route.MetaArgs) {
 export default function UserProfileRoute({ params }: Route.ComponentProps) {
   const username = params.username;
   const { t } = useTranslation();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const order: TimelineOrder = searchParams.get("order") === "asc" ? "asc" : "desc";
   const { data: profile, status: profileStatus } = useUserProfile(username);
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status } =
-    useTimeline({ username });
+    useTimeline({ username, order });
   const { ref, inView } = useInView();
+
+  const updateOrder = (nextOrder: TimelineOrder) => {
+    const nextParams = new URLSearchParams(searchParams);
+    if (nextOrder === "asc") {
+      nextParams.set("order", "asc");
+    } else {
+      nextParams.delete("order");
+    }
+    const nextSearch = nextParams.toString();
+    navigate(nextSearch ? `/u/${username}?${nextSearch}` : `/u/${username}`);
+  };
 
   useEffect(() => {
     if (inView && hasNextPage && !isFetchingNextPage) {
@@ -84,6 +103,10 @@ export default function UserProfileRoute({ params }: Route.ComponentProps) {
           )}
         </div>
       </section>
+
+      <div className="mb-4 flex justify-end">
+        <TimelineOrderToggle value={order} onValueChange={updateOrder} />
+      </div>
 
       <div className="space-y-4">
         {status === "pending" ? (
