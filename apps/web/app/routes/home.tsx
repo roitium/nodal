@@ -10,7 +10,8 @@ import { useInView } from "react-intersection-observer";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useSearchParams } from "react-router";
-import { Calendar, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Calendar, X } from "lucide-react";
+import { Button } from "~/components/ui/button";
 import type { Route } from "./+types/home";
 
 export function meta({}: Route.MetaArgs) {
@@ -18,6 +19,13 @@ export function meta({}: Route.MetaArgs) {
     { title: "Nodal - Timeline" },
     { name: "description", content: "Capture your thoughts, anywhere, anytime." },
   ];
+}
+
+function formatLocalDateParam(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 export default function HomeRoute() {
@@ -37,6 +45,13 @@ export default function HomeRoute() {
   const { ref, inView } = useInView();
   const { t } = useTranslation();
 
+  const updateDateFilter = (nextDate: string) => {
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set("date", nextDate);
+    const nextSearch = nextParams.toString();
+    navigate(nextSearch ? `/?${nextSearch}` : "/");
+  };
+
   const updateOrder = (nextOrder: TimelineOrder) => {
     const nextParams = new URLSearchParams(searchParams);
     if (nextOrder === "asc") {
@@ -53,6 +68,16 @@ export default function HomeRoute() {
     nextParams.delete("date");
     const nextSearch = nextParams.toString();
     navigate(nextSearch ? `/?${nextSearch}` : "/");
+  };
+
+  const shiftDateFilter = (days: number) => {
+    if (!dateFilter) return;
+
+    const currentDate = new Date(`${dateFilter}T00:00:00`);
+    if (Number.isNaN(currentDate.getTime())) return;
+
+    currentDate.setDate(currentDate.getDate() + days);
+    updateDateFilter(formatLocalDateParam(currentDate));
   };
 
   useEffect(() => {
@@ -126,6 +151,32 @@ export default function HomeRoute() {
               <div className="text-center text-muted-foreground py-8 text-sm">
                 {t("timeline.empty")}
               </div>
+            )}
+
+            {dateFilter && (
+              <nav
+                aria-label={t("timeline.dateNavigation")}
+                className="grid grid-cols-2 gap-2 pt-3 sm:flex sm:items-center sm:justify-between"
+              >
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="justify-start gap-2"
+                  onClick={() => shiftDateFilter(-1)}
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  {t("timeline.previousDay")}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="justify-end gap-2"
+                  onClick={() => shiftDateFilter(1)}
+                >
+                  {t("timeline.nextDay")}
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </nav>
             )}
           </>
         )}

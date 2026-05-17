@@ -184,7 +184,10 @@
     "empty": "No memos yet. Write your first one above!",
     "error": "Error loading timeline",
     "newestFirst": "Newest",
-    "oldestFirst": "Oldest"
+    "oldestFirst": "Oldest",
+    "dateNavigation": "Date navigation",
+    "previousDay": "Previous day",
+    "nextDay": "Next day"
   },
   "memoDetail": {
     "title": "Memo",
